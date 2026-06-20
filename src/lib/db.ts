@@ -1,8 +1,11 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import os from "os";
 
-const DB_DIR = path.join(process.cwd(), "data");
+const DB_DIR = process.env.NEUROFLOW_DATA_DIR || (
+  process.env.VERCEL ? path.join(os.tmpdir(), "neuroflow-data") : path.join(process.cwd(), "data")
+);
 
 export interface UserRecord {
   id: string;

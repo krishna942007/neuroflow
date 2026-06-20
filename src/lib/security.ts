@@ -6,8 +6,15 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 type SessionPayload = { userId: string; expiresAt: number };
 
 function getSessionSecret(): string {
-  const secret = process.env.SESSION_SECRET?.trim();
-  if (secret) return secret;
+  const secret = (
+    process.env.SESSION_SECRET ||
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    process.env.GEMINI_API_KEY ||
+    process.env.OPENAI_API_KEY ||
+    process.env.GROQ_API_KEY
+  )?.trim();
+  if (secret) return crypto.createHash("sha256").update(`neuroflow-session:${secret}`).digest("hex");
   if (process.env.NODE_ENV !== "production") return "neuroflow-local-development-only-secret";
   throw new Error("SESSION_SECRET must be configured in production.");
 }
