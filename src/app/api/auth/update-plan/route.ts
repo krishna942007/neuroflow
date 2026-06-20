@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, isSameOriginRequest, safeUser } from "@/lib/security";
+import { getSession, safeUser } from "@/lib/security";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     const session = getSession(request);
     if (!session) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     const { plan } = await request.json();
