@@ -297,6 +297,33 @@ export default function WorkspaceDashboard() {
 
   const userName = user?.fullName ? user.fullName.split(" ")[0] : "User";
 
+  const formatTime = (isoString: string) => {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    } catch (e) {
+      return "Just now";
+    }
+  };
+
+  const getLogIcon = (action: string) => {
+    const act = action.toLowerCase();
+    if (act.includes("search") || act.includes("research")) return Search;
+    if (act.includes("analysis") || act.includes("analyze") || act.includes("report")) return LineChart;
+    if (act.includes("deck") || act.includes("slide") || act.includes("ppt")) return Presentation;
+    if (act.includes("website") || act.includes("design") || act.includes("page")) return Code;
+    if (act.includes("resume") || act.includes("pdf") || act.includes("file") || act.includes("upload")) return FileText;
+    if (act.includes("login") || act.includes("logout")) return Users;
+    return Activity;
+  };
+
+  const getLogDotColor = (action: string) => {
+    const act = action.toLowerCase();
+    if (act.includes("success") || act.includes("saved") || act.includes("completed") || act.includes("upload") || act.includes("initialize")) return "bg-emerald-600";
+    if (act.includes("fail") || act.includes("error")) return "bg-red-600";
+    return "bg-amber-600";
+  };
+
   const [bubbleTitle, setBubbleTitle] = useState("Hi! 👋");
   const [bubbleText, setBubbleText] = useState("I'm Newton, your AI companion.\nI'm here to help you with anything!");
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -675,49 +702,8 @@ export default function WorkspaceDashboard() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-2.5 scrollbar-thin">
-                  {[
-                    {
-                      id: "act-1",
-                      action: "Initiated deep web search",
-                      details: 'Query: "vidyalankar institute if techn...", Deep mode: true',
-                      time: "03:23 PM",
-                      icon: Search,
-                      dotColor: "bg-emerald-600"
-                    },
-                    {
-                      id: "act-2",
-                      action: "Completed report analysis",
-                      details: 'Report: "Q4 Market Analysis 2024"',
-                      time: "02:20 PM",
-                      icon: LineChart,
-                      dotColor: "bg-amber-600"
-                    },
-                    {
-                      id: "act-3",
-                      action: "Generated slide deck",
-                      details: 'Deck: "AI Strategy Presentation"',
-                      time: "02:15 PM",
-                      icon: MessageSquare,
-                      dotColor: "bg-amber-600"
-                    },
-                    {
-                      id: "act-4",
-                      action: "Website Designer project saved",
-                      details: 'Project: "Newton AI Website"',
-                      time: "02:10 PM",
-                      icon: Code,
-                      dotColor: "bg-emerald-600"
-                    },
-                    {
-                      id: "act-5",
-                      action: "Resume analysis completed",
-                      details: 'File: "My_Resume.pdf"',
-                      time: "02:05 PM",
-                      icon: FileText,
-                      dotColor: "bg-emerald-600"
-                    }
-                  ].map((log) => {
-                    const LogIcon = log.icon;
+                  {activityLogs.slice(0, 10).map((log) => {
+                    const LogIcon = getLogIcon(log.action);
                     return (
                       <div key={log.id} className="flex gap-2.5 text-xs text-[#2A3226] items-center justify-between py-1 border-b border-[#3D4833]/5 last:border-b-0">
                         <div className="w-9 h-9 rounded-full bg-[#F0E8DC] border border-[#3D4833]/8 flex items-center justify-center shadow-sm shrink-0">
@@ -725,15 +711,20 @@ export default function WorkspaceDashboard() {
                         </div>
                         <div className="flex flex-col flex-1 min-w-0 text-left">
                           <div className="flex items-center gap-1.5 font-bold text-[#2A3226] text-[12.5px] leading-tight">
-                            <span className={`w-1.5 h-1.5 rounded-full ${log.dotColor} shrink-0`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${getLogDotColor(log.action)} shrink-0`} />
                             <span className="truncate">{log.action}</span>
                           </div>
                           {log.details && <span className="text-[9.5px] text-[#2A3226]/60 mt-0.5 font-medium truncate">{log.details}</span>}
                         </div>
-                        <span className="text-[9.5px] font-mono text-[#2A3226]/50 shrink-0 self-center">{log.time}</span>
+                        <span className="text-[9.5px] font-mono text-[#2A3226]/50 shrink-0 self-center">{formatTime(log.timestamp)}</span>
                       </div>
                     );
                   })}
+                  {activityLogs.length === 0 && (
+                    <div className="my-auto text-center text-[#2A3226]/50 italic text-xs py-8">
+                      No recent activity events
+                    </div>
+                  )}
                 </div>
 
                 <div className="h-[1px] bg-[#3D4833]/10 my-1" />

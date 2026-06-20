@@ -283,19 +283,23 @@ export default function AICompanion() {
 
         bgRec.onerror = (e: any) => {
           console.warn("Background Speech Recognition error:", e.error);
+          backgroundRecRef.current = null;
           if (e.error === "not-allowed" || e.error === "service-not-allowed") {
             // Mic access is blocked or has not been granted yet.
-            // We stop active retries to prevent console flooding and CPU cycles.
             active = false;
           }
         };
 
         bgRec.onend = () => {
+          backgroundRecRef.current = null;
           if (active && !isListeningVoice) {
             // Prevent fast recursive restarts by adding a small delay
             setTimeout(() => {
               if (active && !isListeningVoice) {
-                try { bgRec.start(); } catch (e) {}
+                try { 
+                  bgRec.start(); 
+                  backgroundRecRef.current = bgRec;
+                } catch (e) {}
               }
             }, 1000);
           }
@@ -309,12 +313,14 @@ export default function AICompanion() {
       }
     };
 
-    // satisfies the browser's User Activation Gate requirement by starting on first user interaction
+    // satisfies the browser's User Activation Gate requirement by starting on user interaction
     const handleUserInteraction = () => {
-      startBackgroundListening();
-      // Remove listeners once successfully activated
-      window.removeEventListener("click", handleUserInteraction);
-      window.removeEventListener("keydown", handleUserInteraction);
+      if (!active) {
+        active = true;
+      }
+      if (!backgroundRecRef.current && !isListeningVoice) {
+        startBackgroundListening();
+      }
     };
 
     // Listen to standard clicks or keydown events to bootstrap background listening
@@ -328,6 +334,7 @@ export default function AICompanion() {
       if (bgRecInstance) {
         try { bgRecInstance.abort(); } catch (e) {}
       }
+      backgroundRecRef.current = null;
     };
   }, [mounted, isListeningVoice, userName, bgMicReset]);
 
@@ -595,6 +602,7 @@ export default function AICompanion() {
   };
 
   const handlePuppyClick = () => {
+    window.dispatchEvent(new Event("restart-newton-bg-mic"));
     if (state === "sleeping") {
       setState("idle");
       setBubble("Yawwn... Newton is awake!");
