@@ -430,6 +430,146 @@ export default function WebsiteModule() {
     }
     projectFiles = fixedFiles;
 
+    let html = projectFiles[entryFile] || projectFiles["index.html"] || "";
+
+    const isGlslShader = (content: string): boolean => {
+      const clean = content.trim();
+      return (
+        (clean.includes("void main") && clean.includes("gl_FragColor")) ||
+        clean.startsWith("precision ") ||
+        (clean.includes("uniform ") && clean.includes("vec"))
+      );
+    };
+
+    if (isGlslShader(html)) {
+      const escapedShaderSource = html
+        .replace(/\\/g, '\\\\')
+        .replace(/`/g, '\\`')
+        .replace(/\$/g, '\\$');
+      
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GLSL Shader Preview</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="glcanvas"></canvas>
+  <script>
+    const canvas = document.getElementById('glcanvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) {
+      document.body.innerHTML = '<div style="color: #ff6b6b; padding: 20px; font-family: sans-serif;">WebGL not supported.</div>';
+    }
+
+    const vsSource = \`
+      attribute vec2 position;
+      void main() {
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    \`;
+
+    const fsSource = \`${escapedShaderSource}\`;
+
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const info = gl.getShaderInfoLog(shader);
+        gl.deleteShader(shader);
+        throw new Error(info);
+      }
+      return shader;
+    }
+
+    try {
+      const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+      const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+      const program = gl.createProgram();
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        throw new Error(gl.getProgramInfoLog(program));
+      }
+
+      gl.useProgram(program);
+
+      const positionAttributeLocation = gl.getAttribLocation(program, 'position');
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      const positions = [
+        -1.0, -1.0,
+         1.0, -1.0,
+        -1.0,  1.0,
+        -1.0,  1.0,
+         1.0, -1.0,
+         1.0,  1.0,
+      ];
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(positionAttributeLocation);
+      gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+
+      // Uniform locations
+      const uTimeLocation = gl.getUniformLocation(program, 'u_time');
+      const uResolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+      const uMouseLocation = gl.getUniformLocation(program, 'u_mouse');
+
+      let mouseX = 0;
+      let mouseY = 0;
+      window.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = canvas.height - (e.clientY - rect.top);
+      });
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      function render(time) {
+        time *= 0.001; // seconds
+        
+        gl.uniform1f(uTimeLocation, time);
+        gl.uniform2f(uResolutionLocation, canvas.width, canvas.height);
+        gl.uniform2f(uMouseLocation, mouseX, mouseY);
+
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        requestAnimationFrame(render);
+      }
+      requestAnimationFrame(render);
+    } catch (e) {
+      console.error(e);
+      document.body.innerHTML = '<div style="color: #ff6b6b; font-family: monospace; padding: 20px; white-space: pre-wrap;"><h3>Shader Compilation Error</h3>' + e.message + '</div>';
+    }
+  </script>
+</body>
+</html>`;
+    }
+
     let hasError = false;
     let errorDetails: string | null = null;
 
@@ -637,7 +777,7 @@ export default function WebsiteModule() {
     }
 
     // 3. Resolve entrypoint HTML structure
-    let html = projectFiles[entryFile] || projectFiles["index.html"] || "";
+    html = html || projectFiles[entryFile] || projectFiles["index.html"] || "";
     
     if (!html.trim()) {
       html = `<!DOCTYPE html>
@@ -788,9 +928,10 @@ export default function WebsiteModule() {
       html = `<head>${headInjections}</head>\n` + html;
     }
 
-    // Auto-mount React App if no mounting/rendering script exists in the HTML
+    // Auto-mount React App if we have a detected entrypoint JS/React file, and no rendering script exists in the HTML, and the HTML contains a root element
     const hasRenderCode = /ReactDOM\s*\.\s*(createRoot|render)|render\s*\(/i.test(html);
-    if (!hasRenderCode) {
+    const hasRootEl = html.includes('id="root"') || html.includes("id='root'") || html.includes('id=root');
+    if (!hasRenderCode && detectedEntry && hasRootEl) {
       const autoMountScript = `
 <script type="module">
   import React from 'react';
