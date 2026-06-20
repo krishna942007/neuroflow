@@ -409,11 +409,23 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {/* Free Plan capsule positioned below the profile card row */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#3D4833]/5 text-[#3D4833]/80 border border-[#3D4833]/10 text-[10px] font-semibold uppercase w-fit">
-          <Leaf className="h-3.5 w-3.5 text-[#3D4833] shrink-0" />
-          <span className="tracking-wide">Free Plan</span>
-        </div>
+        {/* Dynamic Plan capsule positioned below the profile card row */}
+        {user?.plan === "pro" ? (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#3D4833] text-[#F5EFE4] border border-[#2A3226] text-[10px] font-bold uppercase w-fit shadow-sm animate-pulse-subtle">
+            <Sparkles className="h-3.5 w-3.5 text-[#F5EFE4] shrink-0" />
+            <span className="tracking-wide">Pro Plan</span>
+          </div>
+        ) : user?.plan === "enterprise" ? (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#6B7365]/10 text-[#2A3226] border border-[#6B7365]/20 text-[10px] font-bold uppercase w-fit">
+            <Sparkles className="h-3.5 w-3.5 text-[#2A3226] shrink-0" />
+            <span className="tracking-wide">Enterprise</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#3D4833]/5 text-[#3D4833]/80 border border-[#3D4833]/10 text-[10px] font-semibold uppercase w-fit">
+            <Leaf className="h-3.5 w-3.5 text-[#3D4833] shrink-0" />
+            <span className="tracking-wide">Free Plan</span>
+          </div>
+        )}
 
       </div>
     </aside>
