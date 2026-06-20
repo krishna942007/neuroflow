@@ -196,9 +196,10 @@ export default function WebsiteModule() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState("");
   const [files, setFiles] = useState<Record<string, string> | null>(null);
+  const [previewFiles, setPreviewFiles] = useState<Record<string, string> | null>(null);
   const [activeFileName, setActiveFileName] = useState("index.html");
   const [currentPreviewFile, setCurrentPreviewFile] = useState("index.html");
-  const [previewMode, setPreviewMode] = useState<"preview" | "code">("preview");
+  const [previewMode, setPreviewMode] = useState<"split" | "preview" | "code">("split");
   const [copied, setCopied] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -238,6 +239,7 @@ export default function WebsiteModule() {
         const parsed = JSON.parse(file.content);
         if (parsed && typeof parsed === "object" && parsed.files) {
           setFiles(parsed.files);
+          setPreviewFiles(parsed.files);
           const fileNames = Object.keys(parsed.files);
           const defaultEntry = fileNames.includes("index.html") ? "index.html" : fileNames[0];
           setActiveFileName(defaultEntry);
@@ -254,6 +256,7 @@ export default function WebsiteModule() {
 
     const parsedFiles = { "index.html": file.content };
     setFiles(parsedFiles);
+    setPreviewFiles(parsedFiles);
     setActiveFileName("index.html");
     setCurrentPreviewFile("index.html");
     setChatHistory([
@@ -345,6 +348,22 @@ export default function WebsiteModule() {
       activeBlobsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, []);
+
+  // Debounce files update to previewFiles to avoid Babel compiling on every keystroke
+  useEffect(() => {
+    if (!files) {
+      setPreviewFiles(null);
+      return;
+    }
+    if (!previewFiles) {
+      setPreviewFiles(files);
+      return;
+    }
+    const handler = setTimeout(() => {
+      setPreviewFiles(files);
+    }, 600);
+    return () => clearTimeout(handler);
+  }, [files]);
 
   // Handle iframe sandbox subpage navigation messages
   useEffect(() => {
@@ -900,6 +919,7 @@ export default function WebsiteModule() {
       const result = await requestAIStream<{ files: Record<string, string> }>("website", { prompt: activePrompt }, onProgress);
       if (result.files && Object.keys(result.files).length > 0) {
         setFiles(result.files);
+        setPreviewFiles(result.files);
         const fileNames = Object.keys(result.files);
         const defaultEntry = fileNames.includes("index.html") ? "index.html" : fileNames[0];
         setActiveFileName(defaultEntry);
@@ -983,8 +1003,9 @@ export default function WebsiteModule() {
 
       if (result.files && Object.keys(result.files).length > 0) {
         setFiles(prev => {
-          if (!prev) return result.files;
-          return { ...prev, ...result.files };
+          const next = prev ? { ...prev, ...result.files } : result.files;
+          setPreviewFiles(next);
+          return next;
         });
         // Remove progress message and add success
         setChatHistory(prev => {
@@ -1023,7 +1044,11 @@ export default function WebsiteModule() {
       alert("File already exists!");
       return;
     }
-    setFiles(prev => prev ? { ...prev, [cleanName]: "" } : null);
+    setFiles(prev => {
+      const next = prev ? { ...prev, [cleanName]: "" } : null;
+      if (next) setPreviewFiles(next);
+      return next;
+    });
     setActiveFileName(cleanName);
     if (cleanName.endsWith(".html")) {
       setCurrentPreviewFile(cleanName);
@@ -1046,6 +1071,7 @@ export default function WebsiteModule() {
         if (!prev) return null;
         const copy = { ...prev };
         delete copy[fileName];
+        setPreviewFiles(copy);
         return copy;
       });
       if (activeFileName === fileName) {
@@ -1152,6 +1178,143 @@ export default function WebsiteModule() {
     return (window as any).Prism.highlight(code, grammar, lang);
   }, [prismReady]);
 
+  const renderPreview = () => (
+    <div className="flex-1 flex flex-col overflow-hidden bg-[#fafaf9] relative h-full">
+      {compileError && (
+        <div className="absolute inset-x-0 top-0 bg-red-50 border-b border-red-200 p-4 text-xs text-red-700 font-mono z-50 flex items-start gap-3 shadow-md animate-slide-in">
+          <AlertCircle className="h-4.5 w-4.5 shrink-0 text-red-500 mt-0.5" />
+          <div className="flex-1">
+            <div className="font-bold text-red-800 mb-1">Compilation Error</div>
+            <pre className="whitespace-pre-wrap text-[11px] leading-relaxed select-text">{compileError}</pre>
+          </div>
+        </div>
+      )}
+      {babelReady ? (
+        <iframe 
+          title="Website Sandbox Live Preview"
+          srcDoc={previewFiles ? bundleWebProject(previewFiles, currentPreviewFile) : ""}
+          sandbox="allow-scripts allow-same-origin"
+          className="w-full h-full border-none bg-[#F0E8DC]"
+        />
+      ) : (
+        <div className="my-auto text-center flex flex-col items-center justify-center gap-3 h-full">
+          <div className="w-8 h-8 rounded-full border-2 border-[#3D4833] border-t-transparent animate-spin" />
+          <span className="text-xs text-[#6B7365] font-sans font-medium tracking-wider">Loading compiler...</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderEditor = () => (
+    <div className="flex-1 flex flex-col overflow-hidden bg-zinc-950 h-full">
+      <div className="h-9 bg-zinc-900 border-b border-zinc-800 px-4 flex items-center justify-between shrink-0 font-sans">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-zinc-400">{activeFileName}</span>
+          <span className="text-[9px] font-mono text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded">
+            {activeFileContent.split('\n').length} lines
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              try {
+                if (activeFileName.endsWith('.html')) {
+                  // Basic HTML formatting
+                  const formatted = activeFileContent
+                    .replace(/>\s*</g, '>\n<')
+                    .split('\n')
+                    .map(line => line.trim())
+                    .join('\n');
+                  setFiles(prev => {
+                    const next = prev ? { ...prev, [activeFileName]: formatted } : null;
+                    if (next) setPreviewFiles(next);
+                    return next;
+                  });
+                }
+              } catch { /* ignore formatting errors */ }
+            }}
+            className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 transition-all font-semibold"
+            title="Format code"
+          >
+            <Palette className="h-3 w-3" />
+            <span>Format</span>
+          </button>
+          <button 
+            onClick={handleCopyCode}
+            className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 transition-all font-semibold"
+          >
+            {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+            <span>{copied ? "Copied!" : "Copy"}</span>
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Line numbers */}
+        <div 
+          ref={lineNumbersRef}
+          className="w-10 bg-zinc-900/80 border-r border-zinc-800/50 text-right select-none shrink-0 overflow-hidden py-5 px-1"
+        >
+          {activeFileContent.split('\n').map((_, i) => (
+            <div 
+              key={i} 
+              className="text-[10px] font-mono text-zinc-600 pr-1"
+              style={{ height: '20px', lineHeight: '20px' }}
+            >
+              {i + 1}
+            </div>
+          ))}
+        </div>
+        {/* Code editor with optional syntax highlight overlay */}
+        <div className="flex-1 relative overflow-hidden bg-zinc-950">
+          {prismReady && (
+            <pre
+              ref={preRef}
+              className="absolute inset-0 p-5 font-mono text-xs leading-relaxed pointer-events-none select-none overflow-hidden"
+              aria-hidden="true"
+              style={{
+                background: 'transparent',
+                margin: 0,
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                lineHeight: '20px',
+                whiteSpace: 'pre',
+              }}
+            >
+              <code
+                dangerouslySetInnerHTML={{ __html: getHighlightedCode(activeFileContent, activeFileName) }}
+                className={`language-${getPrismLanguage(activeFileName)}`}
+                style={{
+                  background: 'transparent',
+                  lineHeight: '20px',
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                }}
+              />
+            </pre>
+          )}
+          <textarea
+            ref={textareaRef}
+            value={activeFileContent}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFiles(prev => prev ? { ...prev, [activeFileName]: val } : null);
+            }}
+            onScroll={handleEditorScroll}
+            className="w-full h-full p-5 bg-transparent font-mono text-xs outline-none border-none resize-none overflow-y-auto scrollbar-thin select-text relative z-10"
+            spellCheck="false"
+            wrap="off"
+            style={{
+              color: 'transparent',
+              WebkitTextFillColor: 'transparent',
+              caretColor: '#d4d4d8',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              lineHeight: '20px',
+              whiteSpace: 'pre',
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   const activeFileContent = files ? files[activeFileName] || "" : "";
 
   return (
@@ -1167,6 +1330,13 @@ export default function WebsiteModule() {
         {files && (
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5 p-0.5 rounded-lg bg-[#F0E8DC] border border-[#3D4833]/20">
+              <button
+                onClick={() => setPreviewMode("split")}
+                className={`px-3 py-1 rounded text-[10px] font-semibold flex items-center gap-1.5 transition-all ${previewMode === "split" ? 'workspace-tab-active' : 'text-[#2A3226]/60 hover:text-[#2A3226]'}`}
+              >
+                <Layout className="h-3 w-3" />
+                <span>Split View</span>
+              </button>
               <button
                 onClick={() => setPreviewMode("preview")}
                 className={`px-3 py-1 rounded text-[10px] font-semibold flex items-center gap-1.5 transition-all ${previewMode === "preview" ? 'workspace-tab-active' : 'text-[#2A3226]/60 hover:text-[#2A3226]'}`}
@@ -1413,144 +1583,20 @@ export default function WebsiteModule() {
               </button>
             </div>
 
-            {/* Center Panel: Editor or Preview Sandbox (3/6 space) */}
-            <div className="lg:col-span-3 bg-[#F0E8DC] flex flex-col overflow-hidden relative border-r border-[#3D4833]/20">
-              {previewMode === "preview" ? (
-                /* Live Preview Sandbox frame */
-                <div className="flex-1 flex flex-col overflow-hidden bg-[#fafaf9] relative">
-                  {compileError && (
-                    <div className="absolute inset-x-0 top-0 bg-red-50 border-b border-red-200 p-4 text-xs text-red-700 font-mono z-10 flex items-start gap-3 shadow-md animate-slide-in">
-                      <AlertCircle className="h-4.5 w-4.5 shrink-0 text-red-500 mt-0.5" />
-                      <div className="flex-1">
-                        <div className="font-bold text-red-800 mb-1">Compilation Error</div>
-                        <pre className="whitespace-pre-wrap text-[11px] leading-relaxed select-text">{compileError}</pre>
-                      </div>
-                    </div>
-                  )}
-                  {babelReady ? (
-                    <iframe 
-                      title="Website Sandbox Live Preview"
-                      srcDoc={files ? bundleWebProject(files, currentPreviewFile) : ""}
-                      sandbox="allow-scripts allow-same-origin"
-                      className="w-full h-full border-none bg-[#F0E8DC]"
-                    />
-                  ) : (
-                    <div className="my-auto text-center flex flex-col items-center gap-3">
-                      <div className="w-8 h-8 rounded-full border-2 border-[#3D4833] border-t-transparent animate-spin" />
-                      <span className="text-xs text-[#6B7365] font-sans font-medium tracking-wider">Loading compiler...</span>
-                    </div>
-                  )}
+            {/* Center Panel: Editor or Preview Sandbox (dynamic column width) */}
+            <div className={`bg-[#F0E8DC] flex flex-col overflow-hidden relative border-r border-[#3D4833]/20 transition-all ${previewMode === "split" ? "lg:col-span-4" : "lg:col-span-3"}`}>
+              <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-[#3D4833]/20 overflow-hidden h-full">
+                <div className={`flex-1 flex flex-col overflow-hidden h-full ${previewMode === "preview" ? "hidden" : ""}`}>
+                  {renderEditor()}
                 </div>
-              ) : (
-                /* Source Code Editor with Syntax Highlighting */
-                <div className="flex-1 flex flex-col overflow-hidden bg-zinc-950">
-                  <div className="h-9 bg-zinc-900 border-b border-zinc-800 px-4 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono text-zinc-400">{activeFileName}</span>
-                      <span className="text-[9px] font-mono text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded">
-                        {activeFileContent.split('\n').length} lines
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          try {
-                            if (activeFileName.endsWith('.html')) {
-                              // Basic HTML formatting
-                              const formatted = activeFileContent
-                                .replace(/>\s*</g, '>\n<')
-                                .split('\n')
-                                .map(line => line.trim())
-                                .join('\n');
-                              setFiles(prev => prev ? { ...prev, [activeFileName]: formatted } : null);
-                            }
-                          } catch { /* ignore formatting errors */ }
-                        }}
-                        className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 transition-all"
-                        title="Format code"
-                      >
-                        <Palette className="h-3 w-3" />
-                        <span>Format</span>
-                      </button>
-                      <button 
-                        onClick={handleCopyCode}
-                        className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 transition-all"
-                      >
-                        {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-                        <span>{copied ? "Copied!" : "Copy"}</span>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex-1 flex overflow-hidden relative">
-                    {/* Line numbers */}
-                    <div 
-                      ref={lineNumbersRef}
-                      className="w-10 bg-zinc-900/80 border-r border-zinc-800/50 text-right select-none shrink-0 overflow-hidden py-5 px-1"
-                    >
-                      {activeFileContent.split('\n').map((_, i) => (
-                        <div 
-                          key={i} 
-                          className="text-[10px] font-mono text-zinc-600 pr-1"
-                          style={{ height: '20px', lineHeight: '20px' }}
-                        >
-                          {i + 1}
-                        </div>
-                      ))}
-                    </div>
-                    {/* Code editor with optional syntax highlight overlay */}
-                    <div className="flex-1 relative overflow-hidden bg-zinc-950">
-                      {prismReady && (
-                        <pre
-                          ref={preRef}
-                          className="absolute inset-0 p-5 font-mono text-xs leading-relaxed pointer-events-none select-none overflow-hidden"
-                          aria-hidden="true"
-                          style={{
-                            background: 'transparent',
-                            margin: 0,
-                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                            lineHeight: '20px',
-                            whiteSpace: 'pre',
-                          }}
-                        >
-                          <code
-                            dangerouslySetInnerHTML={{ __html: getHighlightedCode(activeFileContent, activeFileName) }}
-                            className={`language-${getPrismLanguage(activeFileName)}`}
-                            style={{
-                              background: 'transparent',
-                              lineHeight: '20px',
-                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                            }}
-                          />
-                        </pre>
-                      )}
-                      <textarea
-                        ref={textareaRef}
-                        value={activeFileContent}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setFiles(prev => prev ? { ...prev, [activeFileName]: val } : null);
-                        }}
-                        onScroll={handleEditorScroll}
-                        className="w-full h-full p-5 bg-transparent font-mono text-xs outline-none border-none resize-none overflow-y-auto scrollbar-thin select-text relative z-10"
-                        spellCheck="false"
-                        wrap="off"
-                        style={{
-                          color: 'transparent',
-                          WebkitTextFillColor: 'transparent',
-                          caretColor: '#d4d4d8',
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                          lineHeight: '20px',
-                          whiteSpace: 'pre',
-                        }}
-                      />
-                    </div>
-                  </div>
+                <div className={`flex-1 flex flex-col overflow-hidden h-full ${previewMode === "code" ? "hidden" : ""}`}>
+                  {renderPreview()}
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Right Panel: AI Sidekick Chat Assistant (2/6 space) */}
-            <div className="lg:col-span-2 bg-[#F0E8DC]/40 flex flex-col overflow-hidden h-full">
+            {/* Right Panel: AI Sidekick Chat Assistant (dynamic column width) */}
+            <div className={`bg-[#F0E8DC]/40 flex flex-col overflow-hidden h-full transition-all ${previewMode === "split" ? "lg:col-span-1" : "lg:col-span-2"}`}>
               {/* Chat Header */}
               <div className="h-10 border-b border-[#3D4833]/20 px-4 flex items-center gap-2 bg-[#F0E8DC] shrink-0">
                 <MessageSquare className="h-3.5 w-3.5 text-[#3D4833]" />
