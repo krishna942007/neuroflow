@@ -1,26 +1,1254 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --cream: #E5DDD0;
+  --cream-elevated: #F0E8DC;
+  --cream-muted: #E0D6C6;
+  --cream-deep: #D8CEBD;
+  --cream-input: #EDE6D8;
+  --cream-on-olive: #F5EFE4;
+  --olive: #3D4833;
+  --olive-dark: #2A3226;
+  --olive-muted: #6B7365;
+
+  --background: 38 28% 86%;
+  --foreground: 95 18% 16%;
+  --card: 36 30% 90%;
+  --card-foreground: 95 18% 16%;
+  --popover: 38 28% 86%;
+  --popover-foreground: 95 18% 16%;
+  
+  --primary: 95 18% 24%;
+  --primary-foreground: 36 33% 93%;
+  
+  --secondary: 36 24% 83%;
+  --secondary-foreground: 95 18% 16%;
+  
+  --accent: 95 12% 42%;
+  --accent-foreground: 36 33% 93%;
+  
+  --muted: 36 22% 84%;
+  --muted-foreground: 95 6% 42%;
+  
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 48 70% 93%;
+  
+  --border: 95 12% 24% / 0.14;
+  --input: 95 12% 24% / 0.14;
+  --ring: 95 18% 24%;
+
+  --spotlight-color: 61, 72, 51;
+  --spotlight-border-opacity: 0.16;
+  --spotlight-content-opacity: 0.06;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-lg: 16px;
+  --radius-md: calc(16px - 4px);
+  --radius-sm: calc(16px - 6px);
+
+  --font-display: var(--font-geist-sans), sans-serif;
+  --font-sans: var(--font-geist-sans), sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+
+  --color-glass: rgba(240, 232, 220, 0.78);
+  --color-premium-card: rgba(61, 72, 51, 0.1);
+  --color-primary-text: #2A3226;
+  --color-secondary-text: rgba(42, 50, 38, 0.72);
+  --color-muted-text: rgba(107, 115, 101, 0.85);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  min-height: 100%;
+  width: 100vw;
+  font-family: var(--font-sans);
 }
+
+html:has(.workspace-shell),
+body:has(.workspace-shell) {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+
+@keyframes nf-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes nf-soft-pulse {
+  0%, 100% {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  }
+  50% {
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.07);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.35s linear infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.18s ease-out both;
+}
+
+.workspace-shell {
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(61, 72, 51, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 10%, rgba(216, 206, 189, 0.55) 0%, transparent 50%),
+    linear-gradient(180deg, #E5DDD0 0%, #D8CEBD 100%) !important;
+  color: #2A3226 !important;
+  --spotlight-color: 61, 72, 51;
+  --spotlight-border-opacity: 0.14;
+  --spotlight-content-opacity: 0.05;
+}
+
+.workspace-main-frame,
+.module-frame,
+.workspace-card,
+.glass-panel {
+  background: rgba(240, 232, 220, 0.94) !important;
+  border: 1px solid rgba(61, 72, 51, 0.12) !important;
+  box-shadow:
+    0 10px 30px rgba(42, 36, 28, 0.06),
+    inset 0 1px 0 rgba(245, 239, 228, 0.9) !important;
+  color: #2A3226 !important;
+}
+
+.workspace-main-frame,
+.module-frame {
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+}
+
+.workspace-card {
+  border-radius: 16px;
+  animation: nf-fade-up 0.45s ease-out both;
+}
+
+.workspace-card:hover {
+  border-color: rgba(61, 72, 51, 0.14);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.05) !important;
+  transform: translateY(-2px);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.workspace-tab-active {
+  background: #3D4833 !important;
+  border-color: rgba(61, 72, 51, 0.12) !important;
+  color: #F5EFE4 !important;
+  box-shadow: 0 8px 20px rgba(61, 72, 51, 0.14) !important;
+}
+
+.workspace-tab-idle {
+  color: rgba(61, 72, 51, 0.65) !important;
+}
+
+.workspace-tab-idle:hover {
+  background: rgba(61, 72, 51, 0.05) !important;
+  color: #2A3226 !important;
+}
+
+.workspace-soft-input {
+  background: rgba(237, 230, 216, 0.95) !important;
+  border: 1px solid rgba(61, 72, 51, 0.14) !important;
+  color: #2A3226 !important;
+}
+
+.workspace-soft-input::placeholder {
+  color: rgba(61, 72, 51, 0.4) !important;
+}
+
+.workspace-primary-button {
+  background: #3D4833 !important;
+  color: #F5EFE4 !important;
+  box-shadow: 0 12px 26px rgba(61, 72, 51, 0.14) !important;
+}
+
+.workspace-primary-button:hover {
+  background: #2A3226 !important;
+  color: #ffffff !important;
+}
+
+.workspace-muted-button {
+  background: rgba(61, 72, 51, 0.04) !important;
+  border: 1px solid rgba(61, 72, 51, 0.08) !important;
+  color: #2A3226 !important;
+}
+
+.workspace-muted-button:hover {
+  background: rgba(61, 72, 51, 0.08) !important;
+  color: #2A3226 !important;
+}
+
+.workspace-dock {
+  background: rgba(240, 232, 220, 0.92) !important;
+  border: 1px solid rgba(61, 72, 51, 0.12) !important;
+  box-shadow: 0 10px 30px rgba(42, 36, 28, 0.08);
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  animation: nf-soft-pulse 6s ease-in-out infinite;
+}
+
+.bg-radial-glow {
+  background: radial-gradient(circle, rgba(229, 221, 208, 0.7) 0%, rgba(61, 72, 51, 0.08) 36%, transparent 68%);
+}
+
+/* Quiet Luxury Light-Mode Style Overrides & High-Contrast Typography */
+.workspace-shell .material-frosted,
+.workspace-shell .material-matte,
+.workspace-shell .material-liquid,
+.workspace-shell .material-crystal {
+  background: linear-gradient(135deg, rgba(245, 239, 228, 0.96) 0%, rgba(240, 232, 220, 0.92) 100%) !important;
+  border: 1px solid rgba(61, 72, 51, 0.12) !important;
+  box-shadow: 0 10px 30px rgba(42, 36, 28, 0.05), inset 0 1px 0 rgba(245, 239, 228, 0.85) !important;
+  color: #2A3226 !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.4s ease !important;
+}
+
+.workspace-shell .material-frosted:hover,
+.workspace-shell .material-matte:hover,
+.workspace-shell .material-liquid:hover,
+.workspace-shell .material-crystal:hover {
+  background: #F5EFE4 !important;
+  border-color: rgba(61, 72, 51, 0.18) !important;
+  box-shadow: 0 14px 36px rgba(42, 36, 28, 0.07), inset 0 1px 0 rgba(245, 239, 228, 1) !important;
+}
+
+
+/* Outer Card Container Overrides */
+.workspace-shell .liquid-glass-card {
+  background: rgba(61, 72, 51, 0.05) !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 8px 30px rgba(61, 72, 51, 0.02) !important;
+}
+
+.workspace-shell .liquid-glass-card:hover {
+  background: rgba(61, 72, 51, 0.08) !important;
+  transform: translateY(-4px) scale(1.01) !important;
+  box-shadow: 0 20px 40px rgba(61, 72, 51, 0.04) !important;
+}
+
+/* Shine Sweep pseudo-elements for premium cards */
+.workspace-shell .material-frosted,
+.workspace-shell .material-matte,
+.workspace-shell .material-liquid,
+.workspace-shell .material-crystal {
+  position: relative;
+  overflow: hidden;
+}
+
+.workspace-shell .material-frosted::before,
+.workspace-shell .material-matte::before,
+.workspace-shell .material-liquid::before,
+.workspace-shell .material-crystal::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -80%;
+  width: 40%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(30deg);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+}
+
+.workspace-shell .material-frosted:hover::before,
+.workspace-shell .material-matte:hover::before,
+.workspace-shell .material-liquid:hover::before,
+.workspace-shell .material-crystal:hover::before {
+  left: 140%;
+  opacity: 1;
+  transition: left 0.9s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.9s ease-in-out !important;
+}
+
+.workspace-shell .text-\[\#FBF5DD\],
+.workspace-shell .text-\[\#E0D6C6\],
+.workspace-shell .text-white,
+.workspace-shell .text-zinc-100,
+.workspace-shell .text-zinc-200,
+.workspace-shell .text-zinc-300,
+.workspace-shell .text-slate-100,
+.workspace-shell .text-slate-200,
+.workspace-shell .text-slate-300 {
+  color: #2A3226 !important; /* Deep Forest Charcoal text */
+}
+
+/* Muted secondary texts */
+.workspace-shell .text-\[\#FBF5DD\]\/50,
+.workspace-shell .text-\[\#FBF5DD\]\/65,
+.workspace-shell .text-\[\#E0D6C6\]\/55,
+.workspace-shell .text-\[\#E0D6C6\]\/65,
+.workspace-shell .text-zinc-400,
+.workspace-shell .text-zinc-500,
+.workspace-shell .text-slate-400,
+.workspace-shell .text-slate-500 {
+  color: #6B7365 !important; /* Muted Sage Forest Charcoal text */
+}
+
+/* Catch-all dynamic attribute-level selectors for tailwind fractional opacity texts and placeholders in light mode */
+.workspace-shell [class*="text-[#FBF5DD]/"],
+.workspace-shell [class*="text-[#E0D6C6]/"],
+.workspace-shell [class*="text-white/"] {
+  color: rgba(61, 72, 51, 0.72) !important;
+}
+
+.workspace-shell [class*="placeholder-[#FBF5DD]/"],
+.workspace-shell [class*="placeholder-[#E0D6C6]/"],
+.workspace-shell [class*="placeholder-white/"],
+.workspace-shell input::placeholder,
+.workspace-shell textarea::placeholder {
+  color: rgba(61, 72, 51, 0.45) !important;
+}
+
+/* Light mode input, select and textarea overrides (excluding transparent textareas) */
+.workspace-shell input:not(.bg-transparent),
+.workspace-shell textarea:not(.bg-transparent),
+.workspace-shell select:not(.bg-transparent) {
+  background-color: rgba(237, 230, 216, 0.95) !important;
+  border: 1px solid rgba(61, 72, 51, 0.12) !important;
+  color: #2A3226 !important;
+  box-shadow: inset 0 1px 2px rgba(61, 72, 51, 0.04) !important;
+}
+
+.workspace-shell input,
+.workspace-shell textarea,
+.workspace-shell select {
+  color: #2A3226 !important;
+}
+
+/* Toggle track/knob light mode overrides */
+.workspace-shell .bg-black\/35 {
+  background-color: rgba(61, 72, 51, 0.18) !important;
+}
+.workspace-shell .bg-white\/60 {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3.5px rgba(61, 72, 51, 0.18) !important;
+}
+
+/* Light mode scrollbar thumb and track */
+.workspace-shell ::-webkit-scrollbar-track {
+  background: rgba(61, 72, 51, 0.04) !important;
+}
+.workspace-shell ::-webkit-scrollbar-thumb {
+  background: rgba(61, 72, 51, 0.22) !important;
+}
+.workspace-shell ::-webkit-scrollbar-thumb:hover {
+  background: rgba(61, 72, 51, 0.42) !important;
+}
+
+/* Fix active tabs and primary buttons that contain bg-cream */
+.workspace-shell .workspace-tab-active,
+.workspace-shell .workspace-tab-active *,
+.workspace-shell .workspace-primary-button,
+.workspace-shell .workspace-primary-button * {
+  color: #F5EFE4 !important;
+}
+
+.workspace-shell .workspace-tab-active,
+.workspace-shell .workspace-primary-button,
+.workspace-shell .bg-\[\#FBF5DD\] {
+  background-color: #3D4833 !important; /* Premium Deep Sage active background */
+  color: #F5EFE4 !important;
+  border-color: rgba(61, 72, 51, 0.15) !important;
+}
+
+.workspace-shell .workspace-primary-button:hover,
+.workspace-shell .hover\:bg-\[\#1c351f\]:hover {
+  background-color: #2A3226 !important;
+  color: #ffffff !important;
+}
+
+/* Fix dashboard-level dark bg items — scoped to exclude chat/companion panels */
+.workspace-shell .bg-\[\#FBF5DD\]\/\[0\.02\] {
+  background-color: rgba(224, 214, 198, 0.65) !important;
+  border: 1px solid rgba(61, 72, 51, 0.1) !important;
+  color: #2A3226 !important;
+}
+
+.workspace-shell .bg-\[\#FBF5DD\]\/\[0\.02\]:hover {
+  background-color: rgba(61, 72, 51, 0.05) !important;
+  border-color: rgba(61, 72, 51, 0.15) !important;
+}
+
+/* Only convert clearly-dark app-background blacks in non-module areas */
+.workspace-shell > .bg-zinc-950,
+.workspace-shell > .bg-zinc-900,
+.workspace-main-frame > .bg-zinc-950,
+.workspace-main-frame > .bg-zinc-900 {
+  background-color: #F0E8DC !important;
+  color: #2A3226 !important;
+}
+
+/* Retain white/cream text inside dark background containers in light mode */
+.workspace-shell .bg-\[\#1c351f\] *,
+.workspace-shell .bg-\[\#041E05\] *,
+.workspace-shell .bg-\[\#041E05\]\/95 *,
+.workspace-shell .bg-emerald-800 *,
+.workspace-shell .bg-red-800 *,
+.workspace-shell .bg-red-500 *,
+.workspace-shell .bg-rose-600 *,
+.workspace-shell .bg-purple-600 *,
+.workspace-shell button.bg-\[\#1c351f\] * {
+  color: #F5EFE4 !important;
+}
+
+.workspace-shell .bg-\[\#1c351f\],
+.workspace-shell .bg-\[\#041E05\],
+.workspace-shell .bg-\[\#041E05\]\/95,
+.workspace-shell .bg-emerald-800,
+.workspace-shell .bg-red-800,
+.workspace-shell .bg-red-500,
+.workspace-shell .bg-rose-600,
+.workspace-shell .bg-purple-600,
+.workspace-shell button.bg-\[\#1c351f\] {
+  color: #F5EFE4 !important;
+}
+
+.workspace-shell select option {
+  background-color: #F0E8DC !important;
+  color: #2A3226 !important;
+}
+
+
+.workspace-shell [class*="border-white"],
+.workspace-shell [class*="border-\[\#FBF5DD\]"] {
+  border-color: rgba(61, 72, 51, 0.12) !important;
+}
+
+/* Sidebar warm cream overrides */
+.workspace-shell .premium-dark-sidebar {
+  background: linear-gradient(180deg, #E5DDD0 0%, #D8CEBD 100%) !important;
+  border: 1px solid rgba(61, 72, 51, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(42, 36, 28, 0.05), inset 0 1px 0 rgba(245, 239, 228, 0.6) !important;
+}
+
+.workspace-shell .premium-dark-sidebar * {
+  color: #2A3226 !important;
+  border-color: rgba(61, 72, 51, 0.08) !important;
+}
+
+/* Sidebar headings */
+.workspace-shell .premium-dark-sidebar span.font-mono {
+  color: rgba(61, 72, 51, 0.5) !important;
+  letter-spacing: 0.1em !important;
+}
+
+/* Sidebar tab active / hover */
+.workspace-shell .premium-dark-sidebar .workspace-tab-active,
+.workspace-shell .premium-dark-sidebar .workspace-tab-active * {
+  background-color: #3D4833 !important; /* Dark Sage background */
+  color: #F5EFE4 !important; /* Cream text */
+}
+
+.workspace-shell .premium-dark-sidebar .workspace-tab-idle {
+  color: rgba(61, 72, 51, 0.7) !important;
+  background-color: transparent !important;
+}
+
+.workspace-shell .premium-dark-sidebar .workspace-tab-idle:hover {
+  background-color: rgba(61, 72, 51, 0.06) !important;
+  color: #2A3226 !important;
+}
+
+.workspace-shell .premium-dark-sidebar .workspace-tab-idle:hover * {
+  color: #2A3226 !important;
+}
+
+/* Dropdown workspace selector button */
+.workspace-shell .premium-dark-sidebar button.bg-black\/20 {
+  background-color: rgba(61, 72, 51, 0.05) !important;
+  color: #3D4833 !important;
+  border: 1px solid rgba(61, 72, 51, 0.1) !important;
+}
+.workspace-shell .premium-dark-sidebar button.bg-black\/20:hover {
+  background-color: rgba(61, 72, 51, 0.1) !important;
+}
+.workspace-shell .premium-dark-sidebar button.bg-black\/20 * {
+  color: #3D4833 !important;
+}
+
+/* Dropdown list container inside sidebar */
+.workspace-shell .premium-dark-sidebar div.absolute.top-\[calc\(100\%-8px\)\] {
+  background-color: #F0E8DC !important;
+  border-color: rgba(61, 72, 51, 0.12) !important;
+  box-shadow: 0 10px 25px rgba(61, 72, 51, 0.08) !important;
+}
+
+/* Sidebar forms/inputs */
+.workspace-shell .premium-dark-sidebar input {
+  background-color: #EDE6D8 !important;
+  color: #2A3226 !important;
+  border: 1px solid rgba(61, 72, 51, 0.14) !important;
+}
+
+.workspace-shell .premium-dark-sidebar input::placeholder {
+  color: rgba(61, 72, 51, 0.4) !important;
+}
+
+/* Footer elements */
+.workspace-shell .premium-dark-sidebar div.border-t {
+  border-top-color: rgba(61, 72, 51, 0.08) !important;
+  background: transparent !important;
+}
+
+.workspace-shell .premium-dark-sidebar .hover\:bg-white\/5:hover {
+  background-color: rgba(61, 72, 51, 0.06) !important;
+}
+
+.workspace-shell .premium-dark-sidebar .hover\:bg-white\/5:hover * {
+  color: #2A3226 !important;
+}
+
+.workspace-shell .premium-dark-sidebar .text-white\/90 {
+  color: #2A3226 !important;
+}
+.workspace-shell .premium-dark-sidebar .text-white\/50 {
+  color: rgba(61, 72, 51, 0.6) !important;
+}
+.workspace-shell .premium-dark-sidebar .text-white\/45 {
+  color: rgba(61, 72, 51, 0.5) !important;
+}
+.workspace-shell .premium-dark-sidebar .hover\:text-red-400:hover {
+  color: #f87171 !important;
+}
+
+/* Light mode bottom dock overrides */
+.workspace-shell .workspace-dock {
+  background-color: rgba(240, 232, 220, 0.92) !important;
+  border: 1px solid rgba(61, 72, 51, 0.08) !important;
+  box-shadow: 0 10px 45px rgba(61, 72, 51, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+/* Toggle Sidebar button in Dock */
+.workspace-shell .workspace-dock button.bg-\[\#1c351f\]\/10 {
+  background-color: rgba(61, 72, 51, 0.05) !important;
+  color: #3D4833 !important;
+  border-color: rgba(61, 72, 51, 0.08) !important;
+}
+.workspace-shell .workspace-dock button.bg-\[\#1c351f\]\/10:hover {
+  background-color: #3D4833 !important;
+  color: #F5EFE4 !important;
+}
+
+/* Dock buttons default */
+.workspace-shell .workspace-dock button.text-\[\#3D4833\]\/60 {
+  color: rgba(61, 72, 51, 0.6) !important;
+}
+.workspace-shell .workspace-dock button.text-\[\#3D4833\]\/60:hover {
+  background-color: rgba(61, 72, 51, 0.08) !important;
+  color: #3D4833 !important;
+}
+
+/* Active dock button */
+.workspace-shell .workspace-dock button.bg-\[\#3D4833\] {
+  background-color: #3D4833 !important;
+  color: #F5EFE4 !important;
+}
+.workspace-shell .workspace-dock button.bg-\[\#3D4833\] svg {
+  stroke: #F5EFE4 !important;
+}
+
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(4, 30, 5, 0.15);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(251, 245, 221, 0.15);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(251, 245, 221, 0.3);
+}
+
+/* Premium Liquid Glass Formula */
+.liquid-glass {
+  background: rgba(251, 245, 221, 0.04);
+  backdrop-filter: blur(30px) saturate(180%) brightness(120%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(120%);
+  border: 1px solid rgba(251, 245, 221, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(4, 30, 5, 0.37);
+}
+
+/* Preserve legacy card mappings but upgraded to liquid glass */
+.luxury-card {
+  background: rgba(251, 245, 221, 0.04);
+  backdrop-filter: blur(30px) saturate(180%) brightness(120%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(120%);
+  border: 1px solid rgba(251, 245, 221, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(4, 30, 5, 0.3);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.luxury-card:hover {
+  background: rgba(251, 245, 221, 0.07);
+  border-color: rgba(251, 245, 221, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 48px rgba(4, 30, 5, 0.5);
+}
+
+.luxury-input {
+  background: rgba(251, 245, 221, 0.02);
+  border: 1px solid rgba(251, 245, 221, 0.08);
+  border-radius: 8px;
+  color: #FBF5DD;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.luxury-input:focus {
+  background: rgba(251, 245, 221, 0.05);
+  border-color: rgba(251, 245, 221, 0.3);
+  outline: none;
+}
+
+/* Text Gradients */
+.text-gradient-cream {
+  background: linear-gradient(135deg, #FBF5DD 0%, #E0D6C6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-sage {
+  background: linear-gradient(135deg, #E0D6C6 0%, #3D4833 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Shimmer Loading Animations */
+@keyframes liquid-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.liquid-shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    rgba(251, 245, 221, 0.01) 25%,
+    rgba(251, 245, 221, 0.08) 50%,
+    rgba(251, 245, 221, 0.01) 75%
+  );
+  background-size: 200% 100%;
+  animation: liquid-shimmer 2.5s infinite linear;
+}
+
+/* Ambient glow highlights */
+.ambient-glow-pricing {
+  box-shadow: 0 0 80px 10px rgba(13, 83, 14, 0.2);
+}
+
+.cursor-glow {
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(251, 245, 221, 0.04) 0%, transparent 60%);
+}
+
+/* --- Premium Texture & Material System --- */
+
+/* Global ultra-fine film grain overlay (1.2% opacity) */
+.fine-grain-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.012;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Premium Japanese paper stationery (subtle cream fiber tint) */
+.paper-texture {
+  background-color: #FAF6E8; /* Luxury cream tint */
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.035' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperNoise)'/%3E%3C/svg%3E");
+  color: #1c331d !important;
+  box-shadow: 
+    inset 0 0 40px rgba(13, 83, 14, 0.04),
+    0 10px 30px rgba(4, 30, 5, 0.15);
+}
+
+/* Frosted Glass: High-frequency grain diffusion & top beveled highlight */
+.material-frosted {
+  background: 
+    linear-gradient(135deg, rgba(4, 30, 5, 0.75) 0%, rgba(13, 83, 14, 0.55) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='glassFrost'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23glassFrost)'/%3E%3C/svg%3E");
+  backdrop-filter: blur(25px) saturate(160%) brightness(105%);
+  -webkit-backdrop-filter: blur(25px) saturate(160%) brightness(105%);
+  border: 1px solid rgba(251, 245, 221, 0.12);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 8px 32px 0 rgba(4, 30, 5, 0.45);
+}
+
+/* Liquid Glass: Medium diffusion, translucent, high reflectivity */
+.material-liquid {
+  background: rgba(251, 245, 221, 0.02);
+  backdrop-filter: blur(30px) saturate(180%) brightness(120%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(120%);
+  border: 1px solid rgba(251, 245, 221, 0.08);
+  box-shadow: 
+    0 10px 30px -10px rgba(13, 83, 14, 0.25), 
+    0 25px 60px -20px rgba(4, 30, 5, 0.55), 
+    inset 0 1px 0px rgba(251, 245, 221, 0.06);
+}
+
+/* Matte Glass: High diffusion, low reflectivity, muted brightness */
+.material-matte {
+  background: rgba(4, 30, 5, 0.78);
+  backdrop-filter: blur(35px) saturate(110%) brightness(92%);
+  -webkit-backdrop-filter: blur(35px) saturate(110%) brightness(92%);
+  border: 1px solid rgba(251, 245, 221, 0.1);
+  box-shadow: 
+    inset 0 1px 0px rgba(255, 255, 255, 0.05),
+    0 10px 40px rgba(4, 30, 5, 0.3);
+}
+
+/* Smoked Glass Sidebar: Obsidian obsidian-green backdrop with reflections and deep shadows */
+.material-smoked {
+  background: 
+    linear-gradient(135deg, rgba(4, 30, 5, 0.75) 0%, rgba(13, 83, 14, 0.4) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='smokedNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.015 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23smokedNoise)'/%3E%3C/svg%3E");
+  backdrop-filter: blur(40px) saturate(130%) brightness(85%);
+  -webkit-backdrop-filter: blur(40px) saturate(130%) brightness(85%);
+  border: 1px solid rgba(251, 245, 221, 0.06);
+  box-shadow: 
+    inset 1px 0px 0px rgba(251, 245, 221, 0.05),
+    0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+/* Premium Crystal Glass: High clarity, double white bevel outline highlights */
+.material-crystal {
+  background: 
+    linear-gradient(135deg, rgba(251, 245, 221, 0.08) 0%, rgba(251, 245, 221, 0.02) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='crystalNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.01 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23crystalNoise)'/%3E%3C/svg%3E");
+  backdrop-filter: blur(20px) saturate(180%) brightness(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(130%);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  border-right: 1px solid rgba(251, 245, 221, 0.08);
+  border-bottom: 1px solid rgba(251, 245, 221, 0.08);
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.15),
+    0 15px 35px -5px rgba(4, 30, 5, 0.5);
+}
+
+/* --- Luxury Shadow System --- */
+
+/* Emerald/Forest green ambient depth shadow */
+.shadow-luxury-emerald {
+  box-shadow: 
+    0 10px 30px -10px rgba(13, 83, 14, 0.25),
+    0 25px 60px -20px rgba(4, 30, 5, 0.55),
+    inset 0 1px 0px rgba(251, 245, 221, 0.06);
+}
+
+/* Cream-highlighted warm ambient depth shadow */
+.shadow-luxury-cream {
+  box-shadow: 
+    0 12px 35px -8px rgba(231, 225, 177, 0.05),
+    0 30px 65px -15px rgba(4, 30, 5, 0.65),
+    inset 0 1px 0px rgba(255, 255, 255, 0.08);
+}
+
+/* Deep physical contact drop shadow */
+.shadow-contact {
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 25px 55px -10px rgba(0, 0, 0, 0.65),
+    0 10px 20px -5px rgba(0, 0, 0, 0.7);
+}
+
+/* Premium Typography Helper Classes */
+.font-display {
+  font-family: var(--font-display);
+}
+.font-geist {
+  font-family: var(--font-sans);
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Navbar Link Hover Underline Indicator */
+.nav-link {
+  position: relative;
+  transition: color 0.3s ease;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  transform: scaleX(0);
+  height: 1.5px;
+  bottom: -4px;
+  left: 0;
+  background-color: currentColor;
+  transform-origin: bottom right;
+  transition: transform 0.25s ease-out;
+}
+.nav-link:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+.nav-link-active {
+  color: #FBF5DD !important;
+}
+.nav-link-active::after {
+  transform: scaleX(1) !important;
+  transform-origin: bottom left;
+}
+
+/* --- Aurora & Star Twinkle System --- */
+
+@keyframes aurora-wave-1 {
+  0% {
+    transform: translate(0px, 0px) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(50px, 80px) scale(1.1) rotate(180deg);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1) rotate(360deg);
+  }
+}
+
+@keyframes aurora-wave-2 {
+  0% {
+    transform: translate(0px, 0px) scale(1.2) rotate(0deg);
+  }
+  50% {
+    transform: translate(-60px, -40px) scale(1) rotate(-180deg);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1.2) rotate(-360deg);
+  }
+}
+
+@keyframes aurora-wave-3 {
+  0% {
+    transform: translate(0px, 0px) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(80px, -60px) scale(1.3) rotate(90deg);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1) rotate(360deg);
+  }
+}
+
+.aurora-gradient-1 {
+  background: radial-gradient(circle at 10% 20%, rgba(13, 83, 14, 0.45) 0%, transparent 60%);
+  filter: blur(60px);
+  animation: aurora-wave-1 25s infinite alternate ease-in-out;
+  transform-origin: center center;
+}
+
+.aurora-gradient-2 {
+  background: radial-gradient(circle at 90% 80%, rgba(48, 109, 41, 0.35) 0%, transparent 70%);
+  filter: blur(80px);
+  animation: aurora-wave-2 30s infinite alternate ease-in-out;
+  transform-origin: center center;
+}
+
+.aurora-gradient-3 {
+  background: radial-gradient(circle at 50% 50%, rgba(231, 225, 177, 0.15) 0%, transparent 50%);
+  filter: blur(70px);
+  animation: aurora-wave-3 20s infinite alternate ease-in-out;
+  transform-origin: center center;
+}
+
+@keyframes star-twinkle-anim {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.star-twinkle {
+  animation: star-twinkle-anim infinite ease-in-out;
+}
+
+/* --- Premium Button and Glassmorphism Styling System --- */
+
+@keyframes button-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Premium Shimmer Action Button (Light Mode) */
+.btn-shimmer-light {
+  background: linear-gradient(
+    90deg,
+    #FBF5DD 0%,
+    #ffffff 25%,
+    #E0D6C6 50%,
+    #ffffff 75%,
+    #FBF5DD 100%
+  );
+  background-size: 200% auto;
+  color: #041E05;
+  border: 1px solid rgba(4, 30, 5, 0.1);
+  box-shadow: 0 4px 20px rgba(4, 30, 5, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  animation: button-shimmer 6s linear infinite;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-shimmer-light:hover {
+  animation: button-shimmer 2.5s linear infinite;
+  box-shadow: 0 8px 30px rgba(4, 30, 5, 0.22), 0 0 0 4px rgba(251, 245, 221, 0.4);
+  transform: translateY(-1px) scale(1.02);
+}
+
+.btn-shimmer-light:active {
+  transform: translateY(0.5px) scale(0.98);
+}
+
+/* Premium Shimmer Action Button (Dark Mode) */
+.btn-shimmer-dark {
+  background: linear-gradient(
+    90deg,
+    #3D4833 0%,
+    #E0D6C6 25%,
+    #0D530E 50%,
+    #E0D6C6 75%,
+    #3D4833 100%
+  );
+  background-size: 200% auto;
+  color: #FBF5DD;
+  border: 1px solid rgba(251, 245, 221, 0.15);
+  box-shadow: 0 4px 20px rgba(13, 83, 14, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  animation: button-shimmer 7s linear infinite;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-shimmer-dark:hover {
+  animation: button-shimmer 3s linear infinite;
+  box-shadow: 0 8px 32px rgba(13, 83, 14, 0.55), 0 0 0 4px rgba(48, 109, 41, 0.3);
+  transform: translateY(-1px) scale(1.02);
+}
+
+.btn-shimmer-dark:active {
+  transform: translateY(0.5px) scale(0.98);
+}
+
+/* Premium Glassmorphism Button (Light Mode) */
+.btn-glass-light {
+  background: rgba(4, 30, 5, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(4, 30, 5, 0.15);
+  color: #041E05;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02), inset 0 1px 0px rgba(255, 255, 255, 0.6);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-glass-light:hover {
+  background: rgba(4, 30, 5, 0.08);
+  border-color: rgba(4, 30, 5, 0.45);
+  box-shadow: 0 8px 24px rgba(4, 30, 5, 0.08), inset 0 1px 0px rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px) scale(1.02);
+}
+
+.btn-glass-light:active {
+  transform: translateY(0.5px) scale(0.98);
+}
+
+/* Premium Glassmorphism Button (Dark Mode) */
+.btn-glass-dark {
+  background: rgba(251, 245, 221, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(251, 245, 221, 0.12);
+  color: #FBF5DD;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 1px 0px rgba(255, 255, 255, 0.08);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-glass-dark:hover {
+  background: rgba(251, 245, 221, 0.09);
+  border-color: rgba(251, 245, 221, 0.38);
+  box-shadow: 0 8px 24px rgba(4, 30, 5, 0.4), inset 0 1px 0px rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px) scale(1.02);
+}
+
+.btn-glass-dark:active {
+  transform: translateY(0.5px) scale(0.98);
+}
+
+/* Floating Navigation Bar (Light Mode) */
+.nav-glass-light {
+  background: rgba(251, 245, 221, 0.55);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(4, 30, 5, 0.09);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.01),
+    0 12px 30px -4px rgba(4, 30, 5, 0.06),
+    inset 0 1px 1px rgba(255, 255, 255, 0.85);
+}
+
+/* Floating Navigation Bar (Dark Mode) */
+.nav-glass-dark {
+  background: rgba(4, 30, 5, 0.25);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(251, 245, 221, 0.07);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 20px 40px -10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0px rgba(255, 255, 255, 0.05);
+}
+
+/* Accessibility Focus Outline styling */
+.focus-ring-premium:focus-visible {
+  outline: 2.5px solid #3D4833;
+  outline-offset: 3px;
+}
+
+/* Smooth Transition utility */
+.transition-luxury {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Isolated Dark styling for the Command Palette to prevent eye strain and background overrides */
+.workspace-shell .command-palette-container {
+  background: rgba(4, 25, 6, 0.96) !important;
+  border: 1px solid rgba(250, 246, 236, 0.15) !important;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  color: #FAF6EC !important;
+}
+
+.workspace-shell .command-palette-container * {
+  color: #FAF6EC !important;
+}
+
+.workspace-shell .command-palette-container input {
+  color: #FAF6EC !important;
+  background: transparent !important;
+}
+
+.workspace-shell .command-palette-container input::placeholder {
+  color: rgba(250, 246, 236, 0.35) !important;
+}
+
+/* Category header and muted text */
+.workspace-shell .command-palette-container .text-\[\#FBF5DD\]\/45,
+.workspace-shell .command-palette-container .text-zinc-300,
+.workspace-shell .command-palette-container .text-\[\#FBF5DD\]\/35,
+.workspace-shell .command-palette-container .text-\[\#FBF5DD\]\/30,
+.workspace-shell .command-palette-container [class*="text-\["] {
+  color: rgba(250, 246, 236, 0.45) !important;
+}
+
+/* Selected item styling */
+.workspace-shell .command-palette-container .bg-\[\#E0D6C6\]\/15 {
+  background-color: rgba(231, 225, 177, 0.16) !important;
+  border-color: rgba(231, 225, 177, 0.28) !important;
+}
+
+/* Icons */
+.workspace-shell .command-palette-container svg {
+  stroke: rgba(250, 246, 236, 0.6) !important;
+}
+
+.workspace-shell .command-palette-container button.bg-\[\#E0D6C6\]\/15 svg,
+.workspace-shell .command-palette-container button:hover svg {
+  stroke: #E0D6C6 !important;
+}
+
+/* Keyboard keys */
+.workspace-shell .command-palette-container kbd,
+.workspace-shell .command-palette-container span.font-mono,
+.workspace-shell .command-palette-container .font-mono {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  border-color: rgba(250, 246, 236, 0.15) !important;
+  color: rgba(250, 246, 236, 0.65) !important;
+}
+
+/* Footer container */
+.workspace-shell .command-palette-container .bg-\[\#041E05\]\/45 {
+  background-color: rgba(2, 12, 3, 0.65) !important;
+  border-top-color: rgba(250, 246, 236, 0.1) !important;
+}
+
+/* Isolated high-contrast styling for the Dock Tooltips to ensure legibility */
+.workspace-shell .dock-tooltip {
+  background: #1c351f !important;
+  border: 1px solid rgba(250, 246, 236, 0.22) !important;
+  color: #F5EFE4 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
+}
+
+.workspace-shell .dock-tooltip,
+.workspace-shell .dock-tooltip * {
+  color: #F5EFE4 !important;
+}
+
+/* High contrast chat message text in light workspace shell (dark green on light beige/grey bubbles) */
+.workspace-shell .chat-msg-content,
+.workspace-shell .chat-msg-content *,
+.workspace-shell .user-msg-bubble,
+.workspace-shell .user-msg-bubble * {
+  color: #162c18 !important;
+}
+
+/* Retain high-contrast light grey/white colors for developer code blocks inside messages */
+.workspace-shell .chat-msg-content pre,
+.workspace-shell .chat-msg-content pre *,
+.workspace-shell .chat-msg-content code,
+.workspace-shell .chat-msg-content code * {
+  color: #e4e4e7 !important;
+}
+
+/* Quick action tiles — soft beige like reference */
+.workspace-shell .quick-action-btn {
+  background-color: #E0D6C6 !important;
+  border: 1px solid rgba(61, 72, 51, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(42, 36, 28, 0.04) !important;
+  transition: all 0.25s ease !important;
+}
+
+.workspace-shell .quick-action-btn:hover {
+  background-color: #3D4833 !important;
+  border-color: #3D4833 !important;
+}
+
+.workspace-shell .quick-action-btn * {
+  color: #2A3226 !important;
+  transition: all 0.25s ease !important;
+}
+
+.workspace-shell .quick-action-btn:hover * {
+  color: #F5EFE4 !important; /* Highly visible light text on dark green */
+}
+
+.workspace-shell .quick-action-btn div.rounded-full {
+  background-color: rgba(61, 72, 51, 0.06) !important;
+}
+
+.workspace-shell .quick-action-btn:hover div.rounded-full {
+  background-color: rgba(245, 239, 228, 0.22) !important;
+}
+
+.workspace-shell .quick-action-btn span.opacity-70 {
+  color: rgba(61, 72, 51, 0.65) !important;
+}
+
+.workspace-shell .quick-action-btn:hover span.opacity-70 {
+  color: rgba(245, 239, 228, 0.7) !important;
+}
+
+/* Liquid animation flows for Presentation watermorphism */
+@keyframes liquid-slow {
+  0%, 100% {
+    border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%;
+    transform: translate(12px, -18px) scale(1.05) rotate(120deg);
+  }
+  66% {
+    border-radius: 28% 72% 35% 65% / 40% 60% 40% 60%;
+    transform: translate(-18px, 12px) scale(0.95) rotate(240deg);
+  }
+}
+
+@keyframes liquid-medium {
+  0%, 100% {
+    border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    border-radius: 30% 70% 70% 30% / 50% 30% 70% 50%;
+    transform: translate(-12px, 18px) scale(1.03) rotate(180deg);
+  }
+}
+
+.animate-liquid-slow {
+  animation: liquid-slow 22s ease-in-out infinite alternate;
+}
+
+.animate-liquid-medium {
+  animation: liquid-medium 16s ease-in-out infinite alternate;
+}
+
+

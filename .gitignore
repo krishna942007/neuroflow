@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local runtime data and development artifacts
+/data/
+/scratch/
+/__pycache__/
+/test_payload.json
+/public/babel.min.js
+/images/
+/video/
