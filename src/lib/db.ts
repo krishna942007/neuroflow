@@ -177,6 +177,50 @@ function checkAndApplyExpiry(user: UserRecord): boolean {
   return false;
 }
 
+function cleanupUserRecordData(user: UserRecord): boolean {
+  let changed = false;
+  
+  // 1. Check and correct workspaces ownerId and members
+  if (user.workspaceData && Array.isArray(user.workspaceData.workspaces)) {
+    user.workspaceData.workspaces = user.workspaceData.workspaces.map((ws: any) => {
+      if (ws && (ws.ownerId === "user-1" || ws.ownerId === "guest")) {
+        changed = true;
+        return {
+          ...ws,
+          ownerId: user.id,
+          members: Array.isArray(ws.members) 
+            ? (ws.members.includes(user.id) ? ws.members : [user.id, ...ws.members.filter((m: string) => m !== "user-1")])
+            : [user.id]
+        };
+      }
+      return ws;
+    });
+  }
+
+  // 2. Filter out Krishna's resume files from other users' files list
+  if (user.workspaceData && Array.isArray(user.workspaceData.files)) {
+    const cleanEmail = user.email.toLowerCase().trim();
+    const isKrishna = cleanEmail.includes("krishna") || cleanEmail.includes("krishnasd7869");
+    
+    if (!isKrishna) {
+      const originalLength = user.workspaceData.files.length;
+      user.workspaceData.files = user.workspaceData.files.filter((file: any) => {
+        if (!file) return false;
+        const fileName = (file.name || "").toLowerCase();
+        // Remove files containing "krishna" or "resume" if it is not krishna's account
+        const shouldRemove = fileName.includes("krishna") || 
+                             (fileName.includes("resume") && !fileName.includes("welcome"));
+        return !shouldRemove;
+      });
+      if (user.workspaceData.files.length !== originalLength) {
+        changed = true;
+      }
+    }
+  }
+
+  return changed;
+}
+
 export const db = {
   async getUserByEmail(email: string): Promise<UserRecord | null> {
     const cleanEmail = email.toLowerCase().trim();
@@ -186,11 +230,12 @@ export const db = {
       try {
         const user = await mDb.collection<UserRecord>("users").findOne({ email: cleanEmail });
         if (user) {
-          if (checkAndApplyExpiry(user)) {
-            await mDb.collection<UserRecord>("users").updateOne(
-              { email: cleanEmail }, 
-              { $set: { plan: user.plan, planExpiresAt: user.planExpiresAt, planDuration: user.planDuration } }
-            );
+          let needsSave = checkAndApplyExpiry(user);
+          if (cleanupUserRecordData(user)) {
+            needsSave = true;
+          }
+          if (needsSave) {
+            await mDb.collection<UserRecord>("users").replaceOne({ email: cleanEmail }, user);
           }
           return user;
         }
@@ -206,7 +251,11 @@ export const db = {
       try {
         const data = fs.readFileSync(filePath, "utf8");
         const user = JSON.parse(data) as UserRecord;
-        if (checkAndApplyExpiry(user)) {
+        let needsSave = checkAndApplyExpiry(user);
+        if (cleanupUserRecordData(user)) {
+          needsSave = true;
+        }
+        if (needsSave) {
           fs.writeFileSync(filePath, JSON.stringify(user, null, 2), "utf8");
         }
         return user;
@@ -219,7 +268,11 @@ export const db = {
     // Check and migrate from old db
     const user = migrateUserFromOldDb(cleanEmail);
     if (user) {
-      if (checkAndApplyExpiry(user)) {
+      let needsSave = checkAndApplyExpiry(user);
+      if (cleanupUserRecordData(user)) {
+        needsSave = true;
+      }
+      if (needsSave) {
         fs.writeFileSync(filePath, JSON.stringify(user, null, 2), "utf8");
       }
     }
@@ -232,11 +285,12 @@ export const db = {
       try {
         const user = await mDb.collection<UserRecord>("users").findOne({ id });
         if (user) {
-          if (checkAndApplyExpiry(user)) {
-            await mDb.collection<UserRecord>("users").updateOne(
-              { id }, 
-              { $set: { plan: user.plan, planExpiresAt: user.planExpiresAt, planDuration: user.planDuration } }
-            );
+          let needsSave = checkAndApplyExpiry(user);
+          if (cleanupUserRecordData(user)) {
+            needsSave = true;
+          }
+          if (needsSave) {
+            await mDb.collection<UserRecord>("users").replaceOne({ id }, user);
           }
           return user;
         }
@@ -255,7 +309,11 @@ export const db = {
           const filePath = path.join(DB_DIR, file);
           const user = JSON.parse(fs.readFileSync(filePath, "utf8")) as UserRecord;
           if (user.id === id) {
-            if (checkAndApplyExpiry(user)) {
+            let needsSave = checkAndApplyExpiry(user);
+            if (cleanupUserRecordData(user)) {
+              needsSave = true;
+            }
+            if (needsSave) {
               fs.writeFileSync(filePath, JSON.stringify(user, null, 2), "utf8");
             }
             return user;
@@ -267,7 +325,11 @@ export const db = {
     // Check and migrate from old db
     const user = migrateUserByIdFromOldDb(id);
     if (user) {
-      if (checkAndApplyExpiry(user)) {
+      let needsSave = checkAndApplyExpiry(user);
+      if (cleanupUserRecordData(user)) {
+        needsSave = true;
+      }
+      if (needsSave) {
         const filePath = getSanitizedFilename(user.email);
         fs.writeFileSync(filePath, JSON.stringify(user, null, 2), "utf8");
       }

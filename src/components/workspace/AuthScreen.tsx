@@ -27,6 +27,15 @@ export default function AuthScreen() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [registeredUser, setRegisteredUser] = useState<any>(null);
 
+  // Safety check: if the user is not logged in, reset the workspace store immediately
+  // to avoid leaks of leftover files from other users in localStorage
+  React.useEffect(() => {
+    const isLoggedIn = useAuthStore.getState().isLoggedIn;
+    if (!isLoggedIn) {
+      useWorkspaceStore.getState().resetStore();
+    }
+  }, []);
+
   // Load Google GIS script dynamically only if it is NOT a placeholder Client ID
   React.useEffect(() => {
     if (typeof window === "undefined" || IS_PLACEHOLDER_GOOGLE) return;
