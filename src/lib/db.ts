@@ -416,21 +416,28 @@ export const db = {
     const mDb = await getMongoDb();
     if (mDb) {
       try {
-        const res = await mDb.collection<UserRecord>("users").updateOne({ id: userId }, { $set: { workspaceData } });
+        const res = await mDb.collection<UserRecord>("users").updateOne(
+          { id: userId },
+          { $set: { workspaceData } },
+          { upsert: false }
+        );
         if (res.matchedCount === 0) {
-          throw new Error("User not found for workspace sync.");
+          // User doesn't exist in MongoDB — silently skip instead of throwing 500
+          console.warn(`Workspace sync: user ${userId} not found in MongoDB, skipping.`);
         }
         return;
       } catch (err) {
         console.error("MongoDB updateWorkspaceData error:", err);
-        throw err;
+        // Fall through to file-based storage
       }
     }
 
     // File fallback
     const user = await this.getUserById(userId);
     if (!user) {
-      throw new Error("User not found for workspace sync.");
+      // User not found in file storage either — skip silently
+      console.warn(`Workspace sync: user ${userId} not found in file storage, skipping.`);
+      return;
     }
     
     user.workspaceData = workspaceData;
