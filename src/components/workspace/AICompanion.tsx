@@ -191,11 +191,16 @@ export default function AICompanion() {
     if (!SpeechRecognition) return;
 
     let active = true;
+    let bgRecInstance: any = null;
 
     const startBackgroundListening = () => {
       if (!active || isListeningVoice) return;
       
       try {
+        if (bgRecInstance) {
+          try { bgRecInstance.abort(); } catch (e) {}
+        }
+
         const bgRec = new SpeechRecognition();
         bgRec.continuous = true;
         bgRec.interimResults = true;
@@ -211,6 +216,8 @@ export default function AICompanion() {
               transcript.includes("sherlock") || 
               transcript.includes("hey newton") || 
               transcript.includes("hey sherlock") ||
+              transcript.includes("hello newton") ||
+              transcript.includes("hello sherlock") ||
               transcript.includes("wake up")
             ) {
               try { bgRec.abort(); } catch (e) {}
@@ -235,12 +242,27 @@ export default function AICompanion() {
           }
         };
 
-        bgRec.onend = () => {
-          if (active && !isListeningVoice) {
-            try { bgRec.start(); } catch (e) {}
+        bgRec.onerror = (e: any) => {
+          console.warn("Background Speech Recognition error:", e.error);
+          if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+            // Mic access is blocked or has not been granted yet.
+            // We stop active retries to prevent console flooding and CPU cycles.
+            active = false;
           }
         };
 
+        bgRec.onend = () => {
+          if (active && !isListeningVoice) {
+            // Prevent fast recursive restarts by adding a small delay
+            setTimeout(() => {
+              if (active && !isListeningVoice) {
+                try { bgRec.start(); } catch (e) {}
+              }
+            }, 1000);
+          }
+        };
+
+        bgRecInstance = bgRec;
         backgroundRecRef.current = bgRec;
         bgRec.start();
       } catch (err) {
@@ -248,15 +270,24 @@ export default function AICompanion() {
       }
     };
 
-    const timer = setTimeout(() => {
+    // satisfies the browser's User Activation Gate requirement by starting on first user interaction
+    const handleUserInteraction = () => {
       startBackgroundListening();
-    }, 1200);
+      // Remove listeners once successfully activated
+      window.removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("keydown", handleUserInteraction);
+    };
+
+    // Listen to standard clicks or keydown events to bootstrap background listening
+    window.addEventListener("click", handleUserInteraction);
+    window.addEventListener("keydown", handleUserInteraction);
 
     return () => {
       active = false;
-      clearTimeout(timer);
-      if (backgroundRecRef.current) {
-        try { backgroundRecRef.current.abort(); } catch (e) {}
+      window.removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("keydown", handleUserInteraction);
+      if (bgRecInstance) {
+        try { bgRecInstance.abort(); } catch (e) {}
       }
     };
   }, [mounted, isListeningVoice, userName]);
