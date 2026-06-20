@@ -47,68 +47,13 @@ interface WorkspaceState {
   addFileToWorkspace: (file: Omit<WorkspaceFile, "id" | "createdAt">) => WorkspaceFile;
   deleteFile: (id: string) => void;
   updateFileContent: (id: string, content: string) => void;
+  initializeForUser: (userId: string) => void;
+  resetStore: () => void;
 }
 
-const defaultWorkspaces: Workspace[] = [
-  {
-    id: "personal-ws",
-    name: "Personal Workspace",
-    type: "personal",
-    ownerId: "user-1",
-    members: ["user-1"],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "team-ws",
-    name: "cdac Dev Team",
-    type: "team",
-    ownerId: "user-1",
-    members: ["user-1", "user-2", "user-3"],
-    createdAt: new Date().toISOString(),
-  }
-];
-
-const defaultFolders: Folder[] = [
-  {
-    id: "folder-research",
-    name: "Web Research Reports",
-    workspaceId: "personal-ws",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "folder-careers",
-    name: "Resumes & Applications",
-    workspaceId: "personal-ws",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "folder-slides",
-    name: "Presentations Decks",
-    workspaceId: "team-ws",
-    createdAt: new Date().toISOString(),
-  }
-];
-
-const defaultFiles: WorkspaceFile[] = [
-  {
-    id: "file-resume-mock",
-    name: "Krishna_Singh_Resume.pdf",
-    type: "pdf",
-    size: "1.2 MB",
-    folderId: "folder-careers",
-    createdAt: new Date().toISOString(),
-    content: "Krishna Singh. Full Stack Software Engineer. Skills: React, Next.js, Node.js, Python, FastAPI, PostgreSQL, TailwindCSS. Experience: Built several AI applications and SaaS platforms."
-  },
-  {
-    id: "file-market-analysis",
-    name: "AI_Market_Competitor_Analysis.report",
-    type: "report",
-    size: "82 KB",
-    folderId: "folder-research",
-    createdAt: new Date().toISOString(),
-    content: "# AI Workspace Market Competitor Analysis\n\n## Competitors\n* OpenAI (ChatGPT Plus)\n* Perplexity AI (Deep Search)\n* Notion AI (Document Integration)\n\n## Opportunities\nUnified workspace that combines deep research and direct code/presentation generation."
-  }
-];
+const defaultWorkspaces: Workspace[] = [];
+const defaultFolders: Folder[] = [];
+const defaultFiles: WorkspaceFile[] = [];
 
 export const useWorkspaceStore = create<WorkspaceState>()(
   persist(
@@ -124,12 +69,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setActiveFolder: (id) => set({ activeFolderId: id }),
 
       createWorkspace: (name, type) => {
+        const userId = useAuthStore.getState().user?.id || "guest";
         const newWs: Workspace = {
           id: `ws-${Math.random().toString(36).substr(2, 9)}`,
           name,
           type,
-          ownerId: "user-1",
-          members: ["user-1"],
+          ownerId: userId,
+          members: [userId],
           createdAt: new Date().toISOString(),
         };
         set((state) => ({
@@ -205,6 +151,47 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         set((state) => ({
           files: state.files.map((f) => (f.id === id ? { ...f, content } : f)),
         }));
+      },
+
+      initializeForUser: (userId) => {
+        const personalWsId = `ws-${Math.random().toString(36).substring(2, 11)}`;
+        const welcomeFileId = `file-${Math.random().toString(36).substring(2, 11)}`;
+        set({
+          workspaces: [
+            {
+              id: personalWsId,
+              name: "Personal Workspace",
+              type: "personal",
+              ownerId: userId,
+              members: [userId],
+              createdAt: new Date().toISOString(),
+            }
+          ],
+          folders: [],
+          files: [
+            {
+              id: welcomeFileId,
+              name: "Welcome_to_Neuroflow.md",
+              type: "md",
+              size: "1 KB",
+              folderId: null,
+              createdAt: new Date().toISOString(),
+              content: `# Welcome to Neuroflow AI!\n\nThis is your private workspace. You can start creating web projects, presentations, and documents using the quick actions below.`
+            }
+          ],
+          activeWorkspaceId: personalWsId,
+          activeFolderId: null,
+        });
+      },
+
+      resetStore: () => {
+        set({
+          workspaces: [],
+          folders: [],
+          files: [],
+          activeWorkspaceId: "",
+          activeFolderId: null,
+        });
       },
     }),
     {

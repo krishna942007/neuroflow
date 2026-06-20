@@ -80,6 +80,8 @@ export default function AuthScreen() {
               activeWorkspaceId: data.workspaceData.activeWorkspaceId,
               activeFolderId: null
             });
+          } else {
+            useWorkspaceStore.getState().initializeForUser(data.user.id);
           }
         }
       } else {
@@ -139,60 +141,82 @@ export default function AuthScreen() {
 
     let checkPopupClosed: any;
 
-    // Set up a listener for the popup message
-    const handlePopupMessage = async (event: MessageEvent) => {
+    const cleanUpListeners = () => {
+      if (checkPopupClosed) clearInterval(checkPopupClosed);
+      window.removeEventListener("message", handlePopupMessage);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+
+    const processPayload = async (fullName: string, email: string, avatarUrl: string) => {
+      setErrorMsg(null);
+      setIsLoading(true);
+      try {
+        const res = await fetch("/api/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, fullName, avatarUrl })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (data.isNewUser) {
+            setRegisteredUser(data.user);
+            setShowOnboarding(true);
+          } else {
+            loginAction(
+              data.user.email,
+              data.user.fullName,
+              data.user.id,
+              data.user.role,
+              data.user.plan,
+              data.user.avatarUrl,
+              data.user.planExpiresAt,
+              data.user.hasClaimedPromo
+            );
+            if (data.workspaceData) {
+              useWorkspaceStore.setState({
+                workspaces: data.workspaceData.workspaces,
+                folders: data.workspaceData.folders,
+                files: data.workspaceData.files,
+                activeWorkspaceId: data.workspaceData.activeWorkspaceId,
+                activeFolderId: null
+              });
+            } else {
+              useWorkspaceStore.getState().initializeForUser(data.user.id);
+            }
+          }
+        } else {
+          setErrorMsg(data.error || "Google sign-in authentication failed.");
+        }
+      } catch (err) {
+        setErrorMsg("Server error connecting to Google Sign-in.");
+      } finally {
+        setIsLoading(false);
+        cleanUpListeners();
+      }
+    };
+
+    const handlePopupMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === "GOOGLE_AUTH_SUCCESS") {
         const { fullName, email, avatarUrl } = event.data.payload;
-        setErrorMsg(null);
-        setIsLoading(true);
+        processPayload(fullName, email, avatarUrl);
+      }
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "google_auth_success" && event.newValue) {
         try {
-          const res = await fetch("/api/auth/google", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, fullName, avatarUrl })
-          });
-          const data = await res.json();
-          if (res.ok && data.success) {
-            if (data.isNewUser) {
-              setRegisteredUser(data.user);
-              setShowOnboarding(true);
-            } else {
-              // Log in locally with complete profile data
-              loginAction(
-                data.user.email,
-                data.user.fullName,
-                data.user.id,
-                data.user.role,
-                data.user.plan,
-                data.user.avatarUrl,
-                data.user.planExpiresAt,
-                data.user.hasClaimedPromo
-              );
-              // Restore workspace if present
-              if (data.workspaceData) {
-                useWorkspaceStore.setState({
-                  workspaces: data.workspaceData.workspaces,
-                  folders: data.workspaceData.folders,
-                  files: data.workspaceData.files,
-                  activeWorkspaceId: data.workspaceData.activeWorkspaceId,
-                  activeFolderId: null
-                });
-              }
-            }
-          } else {
-            setErrorMsg(data.error || "Google sign-in authentication failed.");
-          }
-        } catch (err) {
-          setErrorMsg("Server error connecting to Google Sign-in.");
-        } finally {
-          setIsLoading(false);
-          if (checkPopupClosed) clearInterval(checkPopupClosed);
-          window.removeEventListener("message", handlePopupMessage);
+          const payload = JSON.parse(event.newValue);
+          localStorage.removeItem("google_auth_success");
+          const { fullName, email, avatarUrl } = payload;
+          processPayload(fullName, email, avatarUrl);
+        } catch (e) {
+          console.error("Failed to parse google_auth_success:", e);
         }
       }
     };
 
     window.addEventListener("message", handlePopupMessage);
+    window.addEventListener("storage", handleStorageChange);
 
     if (popup) {
       popup.document.write(`
@@ -269,10 +293,19 @@ export default function AuthScreen() {
 
           <script>
             function selectAccount(name, email, avatarUrl) {
-              window.opener.postMessage({
-                type: 'GOOGLE_AUTH_SUCCESS',
-                payload: { fullName: name, email: email, avatarUrl: avatarUrl }
-              }, '*');
+              try {
+                localStorage.setItem('google_auth_success', JSON.stringify({ fullName: name, email: email, avatarUrl: avatarUrl }));
+              } catch (e) {
+                console.error('localStorage write failed:', e);
+              }
+              try {
+                window.opener.postMessage({
+                  type: 'GOOGLE_AUTH_SUCCESS',
+                  payload: { fullName: name, email: email, avatarUrl: avatarUrl }
+                }, '*');
+              } catch (e) {
+                console.error('postMessage failed:', e);
+              }
               window.close();
             }
 
@@ -307,14 +340,13 @@ export default function AuthScreen() {
 
       checkPopupClosed = setInterval(() => {
         if (popup.closed) {
-          clearInterval(checkPopupClosed);
+          cleanUpListeners();
           setIsLoading(false);
-          window.removeEventListener("message", handlePopupMessage);
         }
       }, 500);
     } else {
       setIsLoading(false);
-      window.removeEventListener("message", handlePopupMessage);
+      cleanUpListeners();
     }
   };
 
@@ -388,6 +420,8 @@ export default function AuthScreen() {
               activeWorkspaceId: data.workspaceData.activeWorkspaceId,
               activeFolderId: null
             });
+          } else {
+            useWorkspaceStore.getState().initializeForUser(data.user.id);
           }
         } else {
           setErrorMsg(data.error || "Invalid email or password.");
@@ -423,6 +457,8 @@ export default function AuthScreen() {
             updatedUser.planExpiresAt,
             updatedUser.hasClaimedPromo
           );
+          // Initialize clean workspace for the new user
+          useWorkspaceStore.getState().initializeForUser(updatedUser.id);
         } else {
           setErrorMsg("Failed to assign subscription plan. Try again.");
         }

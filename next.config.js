@@ -5,13 +5,13 @@ const nextConfig = {
   async headers() {
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://vercel.live https://*.vercel-scripts.com https://unpkg.com https://cdnjs.cloudflare.com",
-      "script-src-elem 'self' 'unsafe-inline' https://accounts.google.com https://vercel.live https://*.vercel-scripts.com https://unpkg.com https://cdnjs.cloudflare.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://vercel.live https://*.vercel-scripts.com https://unpkg.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com",
+      "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://vercel.live https://*.vercel-scripts.com https://unpkg.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com",
       "style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com https://cdnjs.cloudflare.com",
       "style-src-elem 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com https://cdnjs.cloudflare.com",
       "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://vercel.live https://*.vercel-insights.com https://generativelanguage.googleapis.com https://api.groq.com https://api.openai.com https://openrouter.ai https://oauth2.googleapis.com https://esm.sh",
+      "connect-src 'self' https://vercel.live https://*.vercel-insights.com https://generativelanguage.googleapis.com https://api.groq.com https://api.openai.com https://openrouter.ai https://oauth2.googleapis.com https://esm.sh https://unpkg.com https://cdn.tailwindcss.com",
       "frame-src https://accounts.google.com https://vercel.live",
       "object-src 'none'",
       "base-uri 'self'",

@@ -560,12 +560,12 @@ export default function ResumeModule() {
                   placeholder="Paste the full job post requirements, skills, and responsibility criteria..."
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
-                  className="w-full text-xs p-3 bg-zinc-950 border border-white/10 rounded-lg outline-none text-white focus:border-primary resize-none font-sans"
+                  className="w-full text-xs p-3 bg-[#EDE6D8] border border-[#3D4833]/10 focus:border-[#3D4833]/30 rounded-lg outline-none text-[#2A3226] placeholder-[#6B7365]/50 resize-none font-sans"
                 />
                 <button 
                   onClick={() => handleJobMatch()}
                   disabled={!jobDescription.trim()}
-                  className={`px-6 py-2.5 rounded-full text-xs font-semibold self-end transition-all ${jobDescription.trim() ? 'bg-secondary hover:bg-secondary/80 text-white shadow-md' : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'}`}
+                  className={`px-6 py-2.5 rounded-full text-xs font-semibold self-end transition-all ${jobDescription.trim() ? 'bg-secondary hover:bg-secondary/80 text-white shadow-md cursor-pointer' : 'bg-[#3D4833]/15 text-[#3D4833]/40 cursor-not-allowed'}`}
                 >
                   Analyze Job Match
                 </button>
@@ -611,29 +611,29 @@ export default function ResumeModule() {
                 placeholder="Example: Maintained databases and fixed server queries."
                 value={bulletPoint}
                 onChange={(e) => setBulletPoint(e.target.value)}
-                className="w-full text-xs p-3 bg-zinc-950 border border-white/10 rounded-lg outline-none text-white focus:border-primary resize-none font-sans"
+                className="w-full text-xs p-3 bg-[#EDE6D8] border border-[#3D4833]/10 focus:border-[#3D4833]/30 rounded-lg outline-none text-[#2A3226] placeholder-[#6B7365]/50 resize-none font-sans"
               />
               <button 
                 onClick={() => handleRewriteBullet()}
                 disabled={!bulletPoint.trim() || isRewriting}
-                className={`px-6 py-2 rounded-full text-xs font-semibold self-end transition-all ${bulletPoint.trim() && !isRewriting ? 'bg-secondary hover:bg-secondary/80 text-white' : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'}`}
+                className={`px-6 py-2 rounded-full text-xs font-semibold self-end transition-all ${bulletPoint.trim() && !isRewriting ? 'bg-secondary hover:bg-secondary/80 text-white cursor-pointer' : 'bg-[#3D4833]/15 text-[#3D4833]/40 cursor-not-allowed'}`}
               >
                 {isRewriting ? "Rewriting..." : "Optimize Bullet Point"}
               </button>
             </div>
 
             {rewrittenBullet && (
-              <div className="rounded-xl border border-white/5 bg-zinc-900/10 p-5 flex flex-col gap-3 font-sans">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-zinc-500 font-mono uppercase">Polished Output (ATS Optimized)</span>
+              <div className="rounded-xl border border-[#3D4833]/25 bg-[#2A3226] p-5 flex flex-col gap-3 font-sans shadow-md">
+                <div className="flex justify-between items-center border-b border-[#3D4833]/30 pb-2 mb-1">
+                  <span className="text-[10px] font-bold text-[#F5EFE4]/60 font-mono uppercase">Polished Output (ATS Optimized)</span>
                   <button 
                     onClick={() => navigator.clipboard.writeText(rewrittenBullet)}
-                    className="text-[10px] font-semibold text-primary hover:underline"
+                    className="text-[10px] font-semibold text-[#F5EFE4] hover:underline cursor-pointer"
                   >
                     Copy to Clipboard
                   </button>
                 </div>
-                <p className="text-xs text-white italic font-sans leading-relaxed">
+                <p style={{ color: '#F5EFE4' }} className="text-xs italic font-sans leading-relaxed">
                   &quot;{rewrittenBullet}&quot;
                 </p>
               </div>
@@ -652,7 +652,7 @@ export default function ResumeModule() {
                   placeholder="e.g. Senior Frontend Engineer"
                   value={roleTitle}
                   onChange={(e) => setRoleTitle(e.target.value)}
-                  className="text-xs p-2.5 bg-zinc-950 border border-white/10 rounded-lg outline-none text-white focus:border-primary"
+                  className="text-xs p-2.5 bg-[#EDE6D8] border border-[#3D4833]/10 focus:border-[#3D4833]/30 rounded-lg outline-none text-[#2A3226] placeholder-[#6B7365]/50"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -662,7 +662,7 @@ export default function ResumeModule() {
                   placeholder="e.g. NeuroFlow AI"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="text-xs p-2.5 bg-zinc-950 border border-white/10 rounded-lg outline-none text-white focus:border-primary"
+                  className="text-xs p-2.5 bg-[#EDE6D8] border border-[#3D4833]/10 focus:border-[#3D4833]/30 rounded-lg outline-none text-[#2A3226] placeholder-[#6B7365]/50"
                 />
               </div>
             </div>
@@ -670,23 +670,23 @@ export default function ResumeModule() {
             <button 
               onClick={handleGenerateCoverLetter}
               disabled={!roleTitle.trim() || !companyName.trim() || isGeneratingCover}
-              className={`px-6 py-2.5 rounded-full text-xs font-semibold self-end transition-all ${roleTitle.trim() && companyName.trim() && !isGeneratingCover ? 'bg-secondary hover:bg-secondary/80 text-white' : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'}`}
+              className={`px-6 py-2.5 rounded-full text-xs font-semibold self-end transition-all ${roleTitle.trim() && companyName.trim() && !isGeneratingCover ? 'bg-secondary hover:bg-secondary/80 text-white cursor-pointer shadow-sm' : 'bg-[#3D4833]/15 text-[#3D4833]/40 cursor-not-allowed'}`}
             >
               {isGeneratingCover ? "Generating..." : "Generate Cover Letter"}
             </button>
 
             {coverLetter && (
-              <div className="rounded-xl border border-white/5 bg-zinc-950/80 p-5 flex flex-col gap-3 font-sans leading-relaxed text-zinc-300">
-                <div className="flex justify-between items-center border-b border-white/5 pb-2 mb-2">
-                  <span className="text-[10px] font-bold text-zinc-500 font-mono uppercase">Generated Letter Template</span>
+              <div className="rounded-xl border border-[#3D4833]/25 bg-[#2A3226] p-5 flex flex-col gap-3 font-sans leading-relaxed shadow-md">
+                <div className="flex justify-between items-center border-b border-[#3D4833]/30 pb-2 mb-1">
+                  <span className="text-[10px] font-bold text-[#F5EFE4]/60 font-mono uppercase">Generated Letter Template</span>
                   <button 
                     onClick={() => navigator.clipboard.writeText(coverLetter)}
-                    className="text-[10px] font-semibold text-primary hover:underline"
+                    className="text-[10px] font-semibold text-[#F5EFE4] hover:underline cursor-pointer"
                   >
                     Copy Text
                   </button>
                 </div>
-                <pre className="text-xs font-sans whitespace-pre-wrap text-zinc-300 leading-relaxed max-h-[220px] overflow-y-auto">
+                <pre style={{ color: '#F5EFE4' }} className="text-xs font-sans whitespace-pre-wrap leading-relaxed max-h-[220px] overflow-y-auto">
                   {coverLetter}
                 </pre>
               </div>
@@ -699,8 +699,8 @@ export default function ResumeModule() {
           <div className="flex-1 flex flex-col">
             {linkedinOutput === null && !isOptimizingLinkedin ? (
               <div className="my-auto text-center flex flex-col items-center gap-4 max-w-sm mx-auto">
-                <Briefcase className="h-8 w-8 text-primary" />
-                <h4 className="text-sm font-semibold text-white">Optimize LinkedIn Profile</h4>
+                <Briefcase className="h-8 w-8 text-[#3D4833]" />
+                <h4 className="text-sm font-semibold text-[#2A3226]">Optimize LinkedIn Profile</h4>
                 <p className="text-xs text-zinc-500">Analyze your resume details and draft an attention-grabbing LinkedIn headline and comprehensive &quot;About&quot; description.</p>
                 <button 
                   onClick={handleOptimizeLinkedIn}
@@ -716,23 +716,23 @@ export default function ResumeModule() {
               </div>
             ) : (
               <div className="flex flex-col gap-6">
-                <div className="rounded-xl border border-white/5 bg-zinc-950/40 p-4 flex flex-col gap-2">
-                  <span className="text-[10px] font-bold text-zinc-500 font-mono uppercase">LinkedIn Professional Headline</span>
-                  <p className="text-xs text-white leading-relaxed font-semibold">&quot;{linkedinOutput?.headline}&quot;</p>
+                <div className="rounded-xl border border-[#3D4833]/25 bg-[#2A3226] p-5 flex flex-col gap-2 shadow-md">
+                  <span className="text-[10px] font-bold text-[#F5EFE4]/60 font-mono uppercase border-b border-[#3D4833]/30 pb-2 mb-1">LinkedIn Professional Headline</span>
+                  <p style={{ color: '#F5EFE4' }} className="text-xs leading-relaxed font-semibold">&quot;{linkedinOutput?.headline}&quot;</p>
                   <button 
                     onClick={() => navigator.clipboard.writeText(linkedinOutput?.headline || "")}
-                    className="text-[9px] text-primary font-bold self-end hover:underline"
+                    className="text-[9px] text-[#F5EFE4] font-bold self-end hover:underline cursor-pointer"
                   >
                     Copy Headline
                   </button>
                 </div>
 
-                <div className="rounded-xl border border-white/5 bg-zinc-950/40 p-4 flex flex-col gap-2">
-                  <span className="text-[10px] font-bold text-zinc-500 font-mono uppercase">LinkedIn About Description</span>
-                  <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">{linkedinOutput?.about}</p>
+                <div className="rounded-xl border border-[#3D4833]/25 bg-[#2A3226] p-5 flex flex-col gap-2 shadow-md">
+                  <span className="text-[10px] font-bold text-[#F5EFE4]/60 font-mono uppercase border-b border-[#3D4833]/30 pb-2 mb-1">LinkedIn About Description</span>
+                  <p style={{ color: '#F5EFE4' }} className="text-xs leading-relaxed whitespace-pre-wrap">{linkedinOutput?.about}</p>
                   <button 
                     onClick={() => navigator.clipboard.writeText(linkedinOutput?.about || "")}
-                    className="text-[9px] text-primary font-bold self-end hover:underline"
+                    className="text-[9px] text-[#F5EFE4] font-bold self-end hover:underline cursor-pointer"
                   >
                     Copy About Summary
                   </button>
@@ -747,12 +747,12 @@ export default function ResumeModule() {
           <div className="flex-1 flex flex-col">
             {interviewQuestions.length === 0 && !isAnalyzing ? (
               <div className="my-auto text-center flex flex-col items-center gap-4 max-w-sm mx-auto">
-                <Brain className="h-8 w-8 text-primary" />
-                <h4 className="text-sm font-semibold text-white">Generate Interview Prep Questions</h4>
+                <Brain className="h-8 w-8 text-[#3D4833]" />
+                <h4 className="text-sm font-semibold text-[#2A3226]">Generate Interview Prep Questions</h4>
                 <p className="text-xs text-zinc-500">We analyze your resume details and draft technical questions, behavioral STAR prompts, and HR responses.</p>
                 <button 
                   onClick={handleGenerateInterviewPrep}
-                  className="px-6 py-2 rounded-full bg-secondary hover:bg-secondary/80 text-xs font-semibold text-white"
+                  className="px-6 py-2 rounded-full bg-secondary hover:bg-secondary/80 text-xs font-semibold text-white cursor-pointer"
                 >
                   Generate Q&A Cards
                 </button>
@@ -765,22 +765,22 @@ export default function ResumeModule() {
             ) : (
               <div className="max-w-md mx-auto w-full flex flex-col gap-4">
                 {activeQuestionIdx !== null && interviewQuestions[activeQuestionIdx] && (
-                  <div className="rounded-2xl border border-white/5 bg-zinc-900/10 p-6 flex flex-col gap-4 relative min-h-[180px]">
-                    <span className="text-[9px] font-bold text-primary font-mono uppercase tracking-widest">
+                  <div className="rounded-2xl border border-[#3D4833]/25 bg-[#2A3226] p-6 flex flex-col gap-4 relative min-h-[180px] shadow-md">
+                    <span className="text-[9px] font-bold text-[#F5EFE4]/60 font-mono uppercase tracking-widest border-b border-[#3D4833]/30 pb-2">
                       {interviewQuestions[activeQuestionIdx].cat} Question
                     </span>
-                    <h4 className="text-xs font-bold text-white leading-relaxed">
+                    <h4 style={{ color: '#F5EFE4' }} className="text-xs font-bold leading-relaxed">
                       {interviewQuestions[activeQuestionIdx].q}
                     </h4>
 
                     {showAnswer ? (
-                      <p className="text-xs text-zinc-400 leading-relaxed pt-2 border-t border-white/5">
+                      <p style={{ color: 'rgba(245, 239, 228, 0.85)' }} className="text-xs leading-relaxed pt-2 border-t border-[#3D4833]/30">
                         {interviewQuestions[activeQuestionIdx].a}
                       </p>
                     ) : (
                       <button 
                         onClick={() => setShowAnswer(true)}
-                        className="mt-4 px-4 py-1.5 rounded-lg border border-white/10 hover:border-white/20 text-[10px] font-semibold text-zinc-400 hover:text-white bg-zinc-950/40"
+                        className="mt-4 px-4 py-1.5 rounded-lg border border-[#3D4833]/20 hover:border-[#3D4833]/40 text-[10px] font-semibold text-[#F5EFE4] bg-[#3D4833] hover:bg-[#3D4833]/80 transition-all cursor-pointer"
                       >
                         Reveal Model Answer
                       </button>
@@ -800,7 +800,7 @@ export default function ResumeModule() {
                         setActiveQuestionIdx(prev => prev! - 1);
                         setShowAnswer(false);
                       }}
-                      className="px-3 py-1 rounded bg-zinc-900 border border-white/5 text-[10px] font-semibold hover:bg-zinc-800 disabled:opacity-50"
+                      className="px-3 py-1 rounded bg-[#3D4833] text-[#F5EFE4] text-[10px] font-semibold hover:bg-[#2A3226] border border-[#3D4833]/20 disabled:opacity-30 cursor-pointer transition-colors"
                     >
                       Prev
                     </button>
@@ -810,7 +810,7 @@ export default function ResumeModule() {
                         setActiveQuestionIdx(prev => prev! + 1);
                         setShowAnswer(false);
                       }}
-                      className="px-3 py-1 rounded bg-secondary text-[10px] font-semibold hover:bg-secondary/80 disabled:opacity-50"
+                      className="px-3 py-1 rounded bg-secondary text-[10px] font-semibold hover:bg-secondary/80 text-white disabled:opacity-30 cursor-pointer transition-colors"
                     >
                       Next
                     </button>

@@ -20,7 +20,8 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/authStore";
 import { useUIStore } from "@/lib/store/uiStore";
-import { motion, AnimatePresence } from "framer-motion";
+import { useWorkspaceStore } from "@/lib/store/workspaceStore";
+import { motion, AnimatePresence } from "motion/react";
 import LiquidGlassCard from "@/components/ui/LiquidGlassCard";
 
 export default function ProfileModule() {
@@ -235,7 +236,10 @@ export default function ProfileModule() {
               Edit Profile
             </button>
             <button
-              onClick={() => logout()}
+              onClick={() => {
+                useWorkspaceStore.getState().resetStore();
+                logout();
+              }}
               className="rounded-full bg-[#3D4833] px-4 py-2 text-sm font-semibold text-[#F5EFE4] shadow-sm transition-colors hover:bg-[#2A3226]"
             >
               Logout

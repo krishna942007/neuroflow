@@ -139,6 +139,11 @@ export const useAuthStore = create<AuthState>()(
           isLoggedIn: false,
           stripeMockStatus: null,
         });
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("neuroflow-workspace-storage");
+          localStorage.removeItem("neuroflow-auth-storage");
+          window.location.reload();
+        }
       },
 
       updateProfile: (fullName, email) => {

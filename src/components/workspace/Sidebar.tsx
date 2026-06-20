@@ -399,6 +399,7 @@ export default function Sidebar() {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              useWorkspaceStore.getState().resetStore();
               logout();
             }}
             title="Logout"
