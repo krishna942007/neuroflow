@@ -317,6 +317,44 @@ def repair_json_string(json_str: str) -> str:
             escape = False
     return "".join(repaired)
 
+def balance_braces(json_str: str) -> str:
+    open_braces = 0
+    open_brackets = 0
+    in_string = False
+    escape = False
+    
+    for i in range(len(json_str)):
+        char = json_str[i]
+        if char == '"' and not escape:
+            in_string = not in_string
+        elif char == '\\' and in_string:
+            escape = not escape
+            continue
+        
+        if not in_string:
+            if char == '{':
+                open_braces += 1
+            elif char == '}':
+                if open_braces > 0:
+                    open_braces -= 1
+            elif char == '[':
+                open_brackets += 1
+            elif char == ']':
+                if open_brackets > 0:
+                    open_brackets -= 1
+        escape = False
+        
+    repaired = json_str
+    if in_string:
+        repaired += '"'
+    while open_brackets > 0:
+        repaired += ']'
+        open_brackets -= 1
+    while open_braces > 0:
+        repaired += '}'
+        open_braces -= 1
+    return repaired
+
 def parse_markdown_files(content: str) -> dict:
     files = {}
     regex = re.compile(
@@ -336,13 +374,35 @@ def parse_markdown_files(content: str) -> dict:
         for match in code_block_regex.finditer(content):
             lang = match.group(1).strip()
             code = match.group(2)
+            
+            # If the block is JSON, try to extract files from it
+            if lang == "json" or code.strip().startswith("{"):
+                try:
+                    repaired = repair_json_string(code.strip())
+                    balanced = balance_braces(repaired)
+                    parsed = json.loads(balanced)
+                    if parsed and isinstance(parsed, dict):
+                        extracted_files = parsed.get("files", parsed)
+                        if extracted_files and isinstance(extracted_files, dict):
+                            merged = False
+                            for f_name, f_content in extracted_files.items():
+                                if isinstance(f_content, str):
+                                    files[f_name] = f_content
+                                    merged = True
+                            if merged:
+                                continue
+                except Exception:
+                    pass
+
             first_line = code.split("\n")[0] if code else ""
             filename_match = re.match(r'(?://|#|\/\*)\s*([a-zA-Z0-9_\-\.\/]+)', first_line)
             if filename_match:
                 files[filename_match.group(1).strip()] = code
             else:
                 name = f"file_{idx}"
-                if lang == "html" or "<!doctype html>" in code.lower():
+                if lang == "json":
+                    name = f"data_{idx}.json"
+                elif lang == "html" or "<!doctype html>" in code.lower():
                     name = "index.html"
                 elif lang == "css" or ("{" in code and "margin:" in code):
                     name = "styles.css"

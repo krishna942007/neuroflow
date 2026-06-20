@@ -118,6 +118,31 @@ function parseMarkdownFiles(content: string): Record<string, string> {
     while ((match = codeBlockRegex.exec(content)) !== null) {
       const lang = match[1].trim();
       const code = match[2];
+      
+      // If the block is JSON, try to extract files from it
+      if (lang === "json" || code.trim().startsWith("{")) {
+        try {
+          const repaired = repairJsonString(code.trim());
+          const balanced = balanceBraces(repaired);
+          const parsed = JSON.parse(balanced);
+          if (parsed && typeof parsed === "object") {
+            const extractedFiles = parsed.files || parsed;
+            if (extractedFiles && typeof extractedFiles === "object") {
+              let merged = false;
+              for (const [fName, fContent] of Object.entries(extractedFiles)) {
+                if (typeof fContent === "string") {
+                  files[fName] = fContent;
+                  merged = true;
+                }
+              }
+              if (merged) continue;
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors and fall through
+        }
+      }
+
       const firstLine = code.split("\n")[0] || "";
       const filenameMatch = firstLine.match(/(?:\/\/|#|\/\*)\s*([a-zA-Z0-9_\-\.\/]+)/);
       if (filenameMatch) {
@@ -125,10 +150,17 @@ function parseMarkdownFiles(content: string): Record<string, string> {
       } else {
         let name = `file_${idx}`;
         const lowerCode = code.toLowerCase();
-        if (lang === "html" || lowerCode.includes("<!doctype html>")) name = "index.html";
-        else if (lang === "css" || lowerCode.includes("margin:") && lowerCode.includes("{")) name = "styles.css";
-        else if (lang === "jsx" || lang === "tsx" || lowerCode.includes("import react") || lowerCode.includes("export default")) name = "App.jsx";
-        else if (lang === "js" || lang === "ts") name = "app.js";
+        if (lang === "json") {
+          name = `data_${idx}.json`;
+        } else if (lang === "html" || lowerCode.includes("<!doctype html>")) {
+          name = "index.html";
+        } else if (lang === "css" || lowerCode.includes("margin:") && lowerCode.includes("{")) {
+          name = "styles.css";
+        } else if (lang === "jsx" || lang === "tsx" || lowerCode.includes("import react") || lowerCode.includes("export default")) {
+          name = "App.jsx";
+        } else if (lang === "js" || lang === "ts") {
+          name = "app.js";
+        }
         files[name] = code;
         idx++;
       }

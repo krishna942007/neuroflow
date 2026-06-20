@@ -91,6 +91,45 @@ export default function AICompanion() {
   
   const panelDragControls = useDragControls();
 
+  // Background Mic Reset triggers
+  const [bgMicReset, setBgMicReset] = useState(0);
+
+  useEffect(() => {
+    const handleRestartBgMic = () => {
+      setBgMicReset(prev => prev + 1);
+    };
+    window.addEventListener("restart-newton-bg-mic", handleRestartBgMic);
+    return () => {
+      window.removeEventListener("restart-newton-bg-mic", handleRestartBgMic);
+    };
+  }, []);
+
+  // Watch microphone permission state changes to auto-restart background listening
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.permissions) return;
+    
+    let active = true;
+    navigator.permissions.query({ name: 'microphone' as any }).then((permissionStatus) => {
+      if (!active) return;
+      
+      const handlePermissionChange = () => {
+        if (permissionStatus.state === 'granted') {
+          window.dispatchEvent(new Event("restart-newton-bg-mic"));
+        }
+      };
+      
+      permissionStatus.onchange = handlePermissionChange;
+      // Trigger initially if already granted
+      if (permissionStatus.state === 'granted') {
+        window.dispatchEvent(new Event("restart-newton-bg-mic"));
+      }
+    }).catch(e => console.warn("Permissions API not supported for microphone:", e));
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const setBubble = (text: string, duration = 4500) => {
     setBubbleText(text);
     setShowBubble(true);
@@ -290,7 +329,7 @@ export default function AICompanion() {
         try { bgRecInstance.abort(); } catch (e) {}
       }
     };
-  }, [mounted, isListeningVoice, userName]);
+  }, [mounted, isListeningVoice, userName, bgMicReset]);
 
   // 4. Inactivity Monitor
   useEffect(() => {
@@ -403,6 +442,7 @@ export default function AICompanion() {
       setIsListeningVoice(true);
       setState("excited");
       setBubble(`I'm listening, ${userName}... 🎤🐕`);
+      window.dispatchEvent(new Event("restart-newton-bg-mic"));
     };
 
     recognition.onresult = (e: any) => {
