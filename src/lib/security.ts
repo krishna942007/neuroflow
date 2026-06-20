@@ -3,7 +3,17 @@ import crypto from "crypto";
 export const SESSION_COOKIE = "neuroflow_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
-type SessionPayload = { userId: string; expiresAt: number };
+export type SessionPayload = {
+  userId: string;
+  email: string;
+  fullName: string;
+  role: "admin" | "user";
+  plan: "free" | "pro" | "enterprise";
+  planExpiresAt?: string;
+  hasClaimedPromo?: boolean;
+  planDuration?: number;
+  expiresAt: number;
+};
 
 function getSessionSecret(): string {
   const secret = (
@@ -27,9 +37,25 @@ function sign(value: string): string {
   return crypto.createHmac("sha256", getSessionSecret()).update(value).digest("base64url");
 }
 
-export function createSessionToken(userId: string): string {
+export function createSessionToken(user: {
+  id: string;
+  email: string;
+  fullName: string;
+  role: "admin" | "user";
+  plan: "free" | "pro" | "enterprise";
+  planExpiresAt?: string;
+  hasClaimedPromo?: boolean;
+  planDuration?: number;
+}): string {
   const payload = encode(JSON.stringify({
-    userId,
+    userId: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role,
+    plan: user.plan,
+    planExpiresAt: user.planExpiresAt,
+    hasClaimedPromo: user.hasClaimedPromo,
+    planDuration: user.planDuration,
     expiresAt: Date.now() + SESSION_TTL_SECONDS * 1000,
   } satisfies SessionPayload));
   return `${payload}.${sign(payload)}`;

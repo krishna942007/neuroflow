@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspaceStore";
 import { useUIStore, CompanionState } from "@/lib/store/uiStore";
+import { useAuthStore } from "@/lib/store/authStore";
 import { requestAIJson } from "@/lib/ai/client";
 import Puppy3D from "./Puppy3D";
 
@@ -30,6 +31,9 @@ interface ChatMessage {
 
 export default function AICompanion() {
   const { files } = useWorkspaceStore();
+  const { user } = useAuthStore();
+  const userName = user?.fullName ? user.fullName.split(" ")[0] : "User";
+
   const activeModule = useUIStore((s) => s.activeModule);
   const setActiveModule = useUIStore((s) => s.setActiveModule);
   const state = useUIStore((s) => s.companionState);
@@ -48,7 +52,7 @@ export default function AICompanion() {
   const setVoiceEnabled = useUIStore((s) => s.setVoiceEnabled);
 
   const [mounted, setMounted] = useState(false);
-  const [bubbleText, setBubbleText] = useState<string>("Hi Krishna! Let's do some work.");
+  const [bubbleText, setBubbleText] = useState<string>("Hi! Let's do some work.");
   const [showBubble, setShowBubble] = useState(true);
   const [loveCount, setLoveCount] = useState(25);
 
@@ -120,15 +124,6 @@ export default function AICompanion() {
     if (savedVoice) {
       setVoiceEnabled(savedVoice !== "false");
     }
-    
-    setChatHistory([
-      {
-        id: "msg-welcome",
-        sender: "newton",
-        text: "Hey Krishna! I'm Newton, your 3D AI companion. Ask me anything, or speak 'hey newton' directly! 🐕✨",
-        timestamp: Date.now()
-      }
-    ]);
 
     const handleMicTrigger = () => {
       setIsPanelExpanded(true);
@@ -139,6 +134,21 @@ export default function AICompanion() {
       window.removeEventListener("newton-mic-trigger", handleMicTrigger);
     };
   }, []);
+
+  // 1b. Initialize welcome messages dynamically when userName or mount state changes
+  useEffect(() => {
+    if (mounted) {
+      setBubbleText(`Hi ${userName}! Let's do some work.`);
+      setChatHistory([
+        {
+          id: "msg-welcome",
+          sender: "newton",
+          text: `Hey ${userName}! I'm Newton, your 3D AI companion. Ask me anything, or speak 'hey newton' directly! 🐕✨`,
+          timestamp: Date.now()
+        }
+      ]);
+    }
+  }, [userName, mounted]);
 
   // Listen to window resize to update boundaries and clamp position
   useEffect(() => {
@@ -210,8 +220,8 @@ export default function AICompanion() {
               
               const greetings = [
                 "Yes! Newton is here, how can I help you?",
-                "Woof! Ready to help you, Krishna!",
-                "Hey Krishna! Newton is listening, what should we do?"
+                `Woof! Ready to help you, ${userName}!`,
+                `Hey ${userName}! Newton is listening, what should we do?`
               ];
               const greetText = greetings[Math.floor(Math.random() * greetings.length)];
               setBubble(greetText);
@@ -249,7 +259,7 @@ export default function AICompanion() {
         try { backgroundRecRef.current.abort(); } catch (e) {}
       }
     };
-  }, [mounted, isListeningVoice]);
+  }, [mounted, isListeningVoice, userName]);
 
   // 4. Inactivity Monitor
   useEffect(() => {
@@ -278,7 +288,7 @@ export default function AICompanion() {
     if (inactivityTimer === 90) {
       setState("confused");
       const prompts = [
-        "Are you still working, Krishna? Need me to review anything?",
+        `Are you still working, ${userName}? Need me to review anything?`,
         "I'm keeping an eye on your workspace files! 📁🐕",
         "Need a quick break or help with coding queries?",
         "Newton is ready for active research requests! ⚡"
@@ -288,7 +298,7 @@ export default function AICompanion() {
       speakResponse(randomPrompt);
       setTimeout(() => setState("idle"), 3000);
     }
-  }, [inactivityTimer]);
+  }, [inactivityTimer, userName]);
 
   // 5. React to Active Module Changes
   useEffect(() => {
@@ -361,7 +371,7 @@ export default function AICompanion() {
     recognition.onstart = () => {
       setIsListeningVoice(true);
       setState("excited");
-      setBubble("I'm listening, Krishna... 🎤🐕");
+      setBubble(`I'm listening, ${userName}... 🎤🐕`);
     };
 
     recognition.onresult = (e: any) => {
@@ -417,7 +427,7 @@ export default function AICompanion() {
         query: textToSend,
         activeModule,
         workspaceFilesCount: files.length,
-        userName: "Krishna",
+        userName,
         history: chatHistory.slice(-8)
       });
 
@@ -486,7 +496,7 @@ export default function AICompanion() {
       const errorMsg: ChatMessage = {
         id: `msg-${Date.now()}-error`,
         sender: "newton",
-        text: "My neural synaptic links got crossed. Can you repeat that, Krishna? Woof!",
+        text: `My neural synaptic links got crossed. Can you repeat that, ${userName}? Woof!`,
         timestamp: Date.now()
       };
       setChatHistory(prev => [...prev, errorMsg]);
@@ -525,7 +535,7 @@ export default function AICompanion() {
 
     const replies = [
       "Woof! That tickles!",
-      "Need any suggestions, Krishna?",
+      `Need any suggestions, ${userName}?`,
       "Let's tackle these coding modules!",
       "I'm feeling 100% optimized today!",
       "Double-click me to open my full controls!"

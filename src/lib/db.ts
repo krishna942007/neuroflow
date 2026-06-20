@@ -2,10 +2,39 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import os from "os";
+import { MongoClient, Db } from "mongodb";
 
 const DB_DIR = process.env.NEUROFLOW_DATA_DIR || (
   process.env.VERCEL ? path.join(os.tmpdir(), "neuroflow-data") : path.join(process.cwd(), "data")
 );
+
+let mongoClient: MongoClient | null = null;
+let mongoDb: Db | null = null;
+const MONGODB_URI = process.env.MONGODB_URI;
+
+async function getMongoDb(): Promise<Db | null> {
+  if (!MONGODB_URI) return null;
+  if (mongoDb) return mongoDb;
+  try {
+    mongoClient = new MongoClient(MONGODB_URI, {
+      maxPoolSize: 10,
+      connectTimeoutMS: 5000,
+    });
+    await mongoClient.connect();
+    mongoDb = mongoClient.db("neuroflow");
+    console.log("Connected successfully to MongoDB.");
+    
+    // Ensure index on email and id
+    const usersCollection = mongoDb.collection("users");
+    await usersCollection.createIndex({ email: 1 }, { unique: true });
+    await usersCollection.createIndex({ id: 1 }, { unique: true });
+    
+    return mongoDb;
+  } catch (err) {
+    console.error("Failed to connect to MongoDB, falling back to local files:", err);
+    return null;
+  }
+}
 
 export interface UserRecord {
   id: string;
@@ -149,10 +178,30 @@ function checkAndApplyExpiry(user: UserRecord): boolean {
 }
 
 export const db = {
-  getUserByEmail(email: string): UserRecord | null {
+  async getUserByEmail(email: string): Promise<UserRecord | null> {
     const cleanEmail = email.toLowerCase().trim();
-    const filePath = getSanitizedFilename(cleanEmail);
     
+    const mDb = await getMongoDb();
+    if (mDb) {
+      try {
+        const user = await mDb.collection<UserRecord>("users").findOne({ email: cleanEmail });
+        if (user) {
+          if (checkAndApplyExpiry(user)) {
+            await mDb.collection<UserRecord>("users").updateOne(
+              { email: cleanEmail }, 
+              { $set: { plan: user.plan, planExpiresAt: user.planExpiresAt, planDuration: user.planDuration } }
+            );
+          }
+          return user;
+        }
+        return null;
+      } catch (err) {
+        console.error("MongoDB getUserByEmail error:", err);
+      }
+    }
+    
+    // File fallback
+    const filePath = getSanitizedFilename(cleanEmail);
     if (fs.existsSync(filePath)) {
       try {
         const data = fs.readFileSync(filePath, "utf8");
@@ -177,7 +226,27 @@ export const db = {
     return user;
   },
 
-  getUserById(id: string): UserRecord | null {
+  async getUserById(id: string): Promise<UserRecord | null> {
+    const mDb = await getMongoDb();
+    if (mDb) {
+      try {
+        const user = await mDb.collection<UserRecord>("users").findOne({ id });
+        if (user) {
+          if (checkAndApplyExpiry(user)) {
+            await mDb.collection<UserRecord>("users").updateOne(
+              { id }, 
+              { $set: { plan: user.plan, planExpiresAt: user.planExpiresAt, planDuration: user.planDuration } }
+            );
+          }
+          return user;
+        }
+        return null;
+      } catch (err) {
+        console.error("MongoDB getUserById error:", err);
+      }
+    }
+
+    // File fallback
     ensureDbDir();
     const files = fs.readdirSync(DB_DIR);
     for (const file of files) {
@@ -206,9 +275,36 @@ export const db = {
     return user;
   },
 
-  createUser(email: string, passwordHash: string | undefined, fullName: string, avatarUrl?: string): UserRecord {
-    ensureDbDir();
+  async createUser(email: string, passwordHash: string | undefined, fullName: string, avatarUrl?: string): Promise<UserRecord> {
     const cleanEmail = email.toLowerCase().trim();
+    const newUser: UserRecord = {
+      id: `user-${crypto.randomBytes(4).toString("hex")}`,
+      email: cleanEmail,
+      fullName,
+      passwordHash,
+      avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fullName)}`,
+      role: "user",
+      plan: "free",
+      createdAt: new Date().toISOString()
+    };
+
+    const mDb = await getMongoDb();
+    if (mDb) {
+      try {
+        const existing = await mDb.collection("users").findOne({ email: cleanEmail });
+        if (existing) {
+          throw new Error("User already exists with this email.");
+        }
+        await mDb.collection<UserRecord>("users").insertOne(newUser);
+        return newUser;
+      } catch (err) {
+        console.error("MongoDB createUser error:", err);
+        throw err;
+      }
+    }
+
+    // File fallback
+    ensureDbDir();
     const filePath = getSanitizedFilename(cleanEmail);
     
     if (fs.existsSync(filePath)) {
@@ -226,23 +322,51 @@ export const db = {
       } catch (_) {}
     }
 
-    const newUser: UserRecord = {
-      id: `user-${crypto.randomBytes(4).toString("hex")}`,
-      email: cleanEmail,
-      fullName,
-      passwordHash,
-      avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fullName)}`,
-      role: "user",
-      plan: "free",
-      createdAt: new Date().toISOString()
-    };
-
     fs.writeFileSync(filePath, JSON.stringify(newUser, null, 2), "utf8");
     return newUser;
   },
 
-  updateWorkspaceData(userId: string, workspaceData: UserRecord["workspaceData"]) {
-    const user = this.getUserById(userId);
+  async recreateUser(user: Omit<UserRecord, "createdAt">): Promise<UserRecord> {
+    const cleanEmail = user.email.toLowerCase().trim();
+    const newUser: UserRecord = {
+      ...user,
+      createdAt: new Date().toISOString()
+    };
+
+    const mDb = await getMongoDb();
+    if (mDb) {
+      try {
+        await mDb.collection<UserRecord>("users").replaceOne({ id: user.id }, newUser, { upsert: true });
+        return newUser;
+      } catch (err) {
+        console.error("MongoDB recreateUser error:", err);
+      }
+    }
+
+    // File fallback
+    ensureDbDir();
+    const filePath = getSanitizedFilename(cleanEmail);
+    fs.writeFileSync(filePath, JSON.stringify(newUser, null, 2), "utf8");
+    return newUser;
+  },
+
+  async updateWorkspaceData(userId: string, workspaceData: UserRecord["workspaceData"]): Promise<void> {
+    const mDb = await getMongoDb();
+    if (mDb) {
+      try {
+        const res = await mDb.collection<UserRecord>("users").updateOne({ id: userId }, { $set: { workspaceData } });
+        if (res.matchedCount === 0) {
+          throw new Error("User not found for workspace sync.");
+        }
+        return;
+      } catch (err) {
+        console.error("MongoDB updateWorkspaceData error:", err);
+        throw err;
+      }
+    }
+
+    // File fallback
+    const user = await this.getUserById(userId);
     if (!user) {
       throw new Error("User not found for workspace sync.");
     }
@@ -253,16 +377,28 @@ export const db = {
     fs.writeFileSync(filePath, JSON.stringify(user, null, 2), "utf8");
   },
 
-  updatePasswordHash(userId: string, passwordHash: string) {
-    const user = this.getUserById(userId);
+  async updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+    const mDb = await getMongoDb();
+    if (mDb) {
+      try {
+        await mDb.collection<UserRecord>("users").updateOne({ id: userId }, { $set: { passwordHash } });
+        return;
+      } catch (err) {
+        console.error("MongoDB updatePasswordHash error:", err);
+        throw err;
+      }
+    }
+
+    // File fallback
+    const user = await this.getUserById(userId);
     if (!user) throw new Error("User not found.");
     user.passwordHash = passwordHash;
     ensureDbDir();
     fs.writeFileSync(getSanitizedFilename(user.email), JSON.stringify(user, null, 2), "utf8");
   },
 
-  updateUserPlan(userId: string, plan: UserRecord["plan"]) {
-    const user = this.getUserById(userId);
+  async updateUserPlan(userId: string, plan: UserRecord["plan"]): Promise<void> {
+    const user = await this.getUserById(userId);
     if (!user) {
       throw new Error("User not found to update subscription plan.");
     }
@@ -288,6 +424,29 @@ export const db = {
       user.planExpiresAt = undefined;
       user.planDuration = undefined;
     }
+
+    const mDb = await getMongoDb();
+    if (mDb) {
+      try {
+        await mDb.collection<UserRecord>("users").updateOne(
+          { id: userId },
+          { 
+            $set: { 
+              plan: user.plan, 
+              planExpiresAt: user.planExpiresAt, 
+              hasClaimedPromo: user.hasClaimedPromo, 
+              planDuration: user.planDuration 
+            } 
+          }
+        );
+        return;
+      } catch (err) {
+        console.error("MongoDB updateUserPlan error:", err);
+        throw err;
+      }
+    }
+
+    // File fallback
     const filePath = getSanitizedFilename(user.email);
     ensureDbDir();
     fs.writeFileSync(filePath, JSON.stringify(user, null, 2), "utf8");

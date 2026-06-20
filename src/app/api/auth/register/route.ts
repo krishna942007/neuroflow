@@ -19,11 +19,11 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json({ error: "Use a valid email, name, and a password of at least 12 characters." }, { status: 400 });
     }
-    if (db.getUserByEmail(email)) return NextResponse.json({ error: "Unable to create account with these details." }, { status: 409 });
+    if (await db.getUserByEmail(email)) return NextResponse.json({ error: "Unable to create account with these details." }, { status: 409 });
 
-    const user = db.createUser(email, hashPassword(password), fullName.trim());
+    const user = await db.createUser(email, hashPassword(password), fullName.trim());
     const response = NextResponse.json({ user: safeUser(user), success: true }, { status: 201 });
-    response.cookies.set(SESSION_COOKIE, createSessionToken(user.id), sessionCookieOptions);
+    response.cookies.set(SESSION_COOKIE, createSessionToken(user), sessionCookieOptions);
     response.headers.set("Cache-Control", "no-store");
     return response;
   } catch (error) {

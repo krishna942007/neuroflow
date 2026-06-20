@@ -19,7 +19,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid workspace payload." }, { status: 400 });
     }
 
-    db.updateWorkspaceData(session.userId, { workspaces, folders, files, activeWorkspaceId });
+    let user = await db.getUserById(session.userId);
+    if (!user) {
+      user = await db.recreateUser({
+        id: session.userId,
+        email: session.email,
+        fullName: session.fullName,
+        role: session.role,
+        plan: session.plan,
+        planExpiresAt: session.planExpiresAt,
+        hasClaimedPromo: session.hasClaimedPromo,
+        planDuration: session.planDuration,
+      });
+      console.log(`Recreated session user ${session.email} in workspace sync route.`);
+    }
+
+    await db.updateWorkspaceData(session.userId, { workspaces, folders, files, activeWorkspaceId });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Workspace sync error:", error);

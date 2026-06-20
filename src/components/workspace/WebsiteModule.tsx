@@ -1431,7 +1431,7 @@ export default function WebsiteModule() {
                     <iframe 
                       title="Website Sandbox Live Preview"
                       srcDoc={files ? bundleWebProject(files, currentPreviewFile) : ""}
-                      sandbox="allow-scripts"
+                      sandbox="allow-scripts allow-same-origin"
                       className="w-full h-full border-none bg-[#F0E8DC]"
                     />
                   ) : (

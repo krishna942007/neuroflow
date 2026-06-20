@@ -36,14 +36,14 @@ export async function POST(request: Request) {
     }
 
     let isNewUser = false;
-    let user = db.getUserByEmail(profile.email);
+    let user = await db.getUserByEmail(profile.email);
     if (!user) {
-      user = db.createUser(profile.email, undefined, profile.name, profile.picture);
+      user = await db.createUser(profile.email, undefined, profile.name, profile.picture);
       isNewUser = true;
     }
 
     const response = NextResponse.json({ user: safeUser(user), workspaceData: user.workspaceData || null, isNewUser, success: true });
-    response.cookies.set(SESSION_COOKIE, createSessionToken(user.id), sessionCookieOptions);
+    response.cookies.set(SESSION_COOKIE, createSessionToken(user), sessionCookieOptions);
     response.headers.set("Cache-Control", "no-store");
     return response;
   } catch (error) {

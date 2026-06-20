@@ -15,15 +15,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
-    const user = db.getUserByEmail(email);
+    const user = await db.getUserByEmail(email);
     if (!user?.passwordHash) return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
 
     const verification = verifyPassword(password, user.passwordHash);
     if (!verification.valid) return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
-    if (verification.needsUpgrade) db.updatePasswordHash(user.id, hashPassword(password));
+    if (verification.needsUpgrade) await db.updatePasswordHash(user.id, hashPassword(password));
 
     const response = NextResponse.json({ user: safeUser(user), workspaceData: user.workspaceData || null, success: true });
-    response.cookies.set(SESSION_COOKIE, createSessionToken(user.id), sessionCookieOptions);
+    response.cookies.set(SESSION_COOKIE, createSessionToken(user), sessionCookieOptions);
     response.headers.set("Cache-Control", "no-store");
     return response;
   } catch (error) {

@@ -295,9 +295,15 @@ export default function WorkspaceDashboard() {
     }
   };
 
-  const [bubbleTitle, setBubbleTitle] = useState("Hi Krishna! 👋");
+  const userName = user?.fullName ? user.fullName.split(" ")[0] : "User";
+
+  const [bubbleTitle, setBubbleTitle] = useState("Hi! 👋");
   const [bubbleText, setBubbleText] = useState("I'm Newton, your AI companion.\nI'm here to help you with anything!");
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setBubbleTitle(`Hi ${userName}! 👋`);
+  }, [userName]);
 
   useEffect(() => {
     return () => {
@@ -314,7 +320,7 @@ export default function WorkspaceDashboard() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       store.setCompanionState("idle");
-      setBubbleTitle("Hi Krishna! 👋");
+      setBubbleTitle(`Hi ${userName}! 👋`);
       setBubbleText("I'm Newton, your AI companion.\nI'm here to help you with anything!");
     }, 4500);
   };
@@ -576,7 +582,7 @@ export default function WorkspaceDashboard() {
                   {/* Quick feelings interactions row */}
                   <div className="flex flex-wrap items-center gap-1.5 mt-2 w-full">
                     <button 
-                      onClick={() => triggerExpression("excited", "Aww, tickles! 🐾", "Krishna petted me! Tail wagging at maximum speed! Woof!")}
+                      onClick={() => triggerExpression("excited", "Aww, tickles! 🐾", `${userName} petted me! Tail wagging at maximum speed! Woof!`)}
                       className="px-2 py-1 rounded-lg bg-[#3D4833]/8 hover:bg-[#3D4833] text-[#3D4833] hover:text-[#F5EFE4] text-[10px] font-semibold border border-[#3D4833]/10 transition-all cursor-pointer flex items-center gap-0.5 shadow-sm"
                       title="Pet Newton"
                     >

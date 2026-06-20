@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useWorkspaceStore } from "./workspaceStore";
+import { useAuthStore } from "./authStore";
 
 export interface Message {
   id: string;
@@ -230,7 +231,7 @@ export function formatUserProfile(user: UserProfile): string {
 // Example usage
 const user: UserProfile = {
   id: 'usr_flow_99',
-  name: 'Krishna Singh',
+  name: '${useAuthStore.getState().user?.fullName || "Alex Rivera"}',
   role: 'admin',
   createdAt: new Date()
 };
