@@ -118,7 +118,7 @@ def provider_config(provider: str, requested_model: str = None):
 def get_model_for_task(task: str) -> str:
     # Assign the best model (provider fallback key) for each task type
     if task == "website_edit":
-        return "anthropic"
+        return "gemini-2.5-pro"  # Best Gemini model for web code generation & refinement
     elif task in ["website", "presentation"]:
         return "openai" # Best coding and markup schema validation
     elif task in ["resume_ats", "resume_match", "resume_rewrite", "resume_cover", "resume_linkedin", "resume_interview"]:

@@ -280,7 +280,7 @@ function extractJson(content: string, task?: string) {
 
 function getModelForTask(task: string): string {
   if (task === "website_edit") {
-    return "anthropic";
+    return "gemini-2.5-pro";
   }
   if (["website", "presentation"].includes(task)) {
     return "openai";

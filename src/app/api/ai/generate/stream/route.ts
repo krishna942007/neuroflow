@@ -29,7 +29,7 @@ function getMaxTokensForTask(task: string): number {
 }
 
 function getModelForTask(task: string): string {
-  if (task === "website_edit") return "anthropic";
+  if (task === "website_edit") return "gemini-2.5-pro";
   if (["website", "presentation"].includes(task)) return "openai";
   return "gemini";
 }
@@ -363,7 +363,7 @@ export async function POST(request: Request) {
         const promptContent = `${instruction}\n\nInput:\n${JSON.stringify(body.input || {}).slice(0, 24000)}`;
 
         // Phase 2: Generation
-        const modelDisplayName = requestedModel === "openai" ? "GPT-4o" : requestedModel === "anthropic" ? "Claude" : requestedModel;
+        const modelDisplayName = requestedModel === "openai" ? "GPT-4o" : requestedModel.startsWith("gemini") ? "Gemini 2.5 Pro" : requestedModel;
         send("progress", { step: `Generating with ${modelDisplayName}...` });
         send("progress", { step: "Building component architecture..." });
 
