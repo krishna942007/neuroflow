@@ -311,6 +311,30 @@ export default function WorkspaceDashboard() {
     };
   }, []);
 
+  // Cleanup mock team members and ensure owner is correctly set to logged-in user
+  useEffect(() => {
+    if (!user) return;
+    const mockEmails = ["admin@neuroflow.ai", "member1@cdac.in", "developer@neuroflow.ai"];
+    const hasMock = teamMembers.some(m => mockEmails.includes(m.email));
+    const hasCorrectOwner = teamMembers.some(m => m.role === "owner" && m.email === user.email);
+    
+    if (hasMock || !hasCorrectOwner) {
+      const filtered = teamMembers.filter(m => !mockEmails.includes(m.email));
+      const rest = filtered.filter(m => m.role !== "owner");
+      const updated = [
+        {
+          id: user.id,
+          email: user.email,
+          role: "owner" as const,
+          status: "active" as const,
+          joinedAt: user.createdAt || new Date().toISOString()
+        },
+        ...rest
+      ];
+      useAuthStore.setState({ teamMembers: updated });
+    }
+  }, [teamMembers, user]);
+
   const triggerExpression = (mood: CompanionState, title: string, text: string) => {
     const store = useUIStore.getState();
     store.setCompanionState(mood);
@@ -419,12 +443,12 @@ export default function WorkspaceDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch h-full overflow-hidden">
             
             {/* Left Big Column: Files list, Quick Actions, Newton Companion & Bottom Dock */}
-            <div className="lg:col-span-2 flex flex-col gap-3 h-full overflow-hidden justify-between">
+            <div className="lg:col-span-2 flex flex-col gap-3 h-full overflow-y-auto pr-1 scrollbar-thin justify-start">
               
               {/* Files panel */}
               <LiquidGlassCard 
                 material="frosted" 
-                containerClassName={workspaceFiles.length === 0 ? "flex-1 min-h-[175px] max-h-[195px] relative" : "flex-1 max-h-[260px] min-h-[180px] relative"} 
+                containerClassName={workspaceFiles.length === 0 ? "flex-1 min-h-[130px] max-h-[195px] relative" : "flex-1 max-h-[260px] min-h-[130px] relative"} 
                 className="p-4 flex flex-col gap-3"
                 innerClassName="h-full flex flex-col"
               >
@@ -632,7 +656,7 @@ export default function WorkspaceDashboard() {
               </div>
 
               {/* Floating bottom dock centered below the Newton area */}
-              <div className="flex justify-center mt-1 shrink-0">
+              <div className="flex justify-center mt-auto py-1 shrink-0">
                 <Dock inline={true} />
               </div>
 

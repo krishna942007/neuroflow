@@ -51,29 +51,7 @@ interface AuthState {
 
 const APP_EPOCH = Date.parse("2026-06-19T12:00:00.000Z");
 
-const initialTeamMembers: TeamMember[] = [
-  {
-    id: "user-1",
-    email: "admin@neuroflow.ai",
-    role: "owner",
-    status: "active",
-    joinedAt: new Date(APP_EPOCH - 86400000 * 30).toISOString(),
-  },
-  {
-    id: "user-2",
-    email: "member1@cdac.in",
-    role: "admin",
-    status: "active",
-    joinedAt: new Date(APP_EPOCH - 86400000 * 5).toISOString(),
-  },
-  {
-    id: "user-3",
-    email: "developer@neuroflow.ai",
-    role: "member",
-    status: "invited",
-    joinedAt: new Date(APP_EPOCH).toISOString(),
-  }
-];
+const initialTeamMembers: TeamMember[] = [];
 
 const initialLogs: ActivityLog[] = [
   {
@@ -124,10 +102,31 @@ export const useAuthStore = create<AuthState>()(
           hasClaimedPromo,
           planDuration,
         };
+
+        // Remove default mock team members if any, and set/update owner to logged-in user
+        const mockEmails = ["admin@neuroflow.ai", "member1@cdac.in", "developer@neuroflow.ai"];
+        const currentTeam = get().teamMembers || [];
+        const filteredTeam = currentTeam.filter(m => !mockEmails.includes(m.email));
+        
+        const hasOwner = filteredTeam.some(m => m.role === "owner");
+        const updatedTeam = hasOwner
+          ? filteredTeam.map(m => m.role === "owner" ? { ...m, email: newUser.email, id: newUser.id } : m)
+          : [
+              {
+                id: newUser.id,
+                email: newUser.email,
+                role: "owner" as const,
+                status: "active" as const,
+                joinedAt: newUser.createdAt,
+              },
+              ...filteredTeam
+            ];
+
         set({
           user: newUser,
           isLoggedIn: true,
           stripeMockStatus: plan === "free" ? null : "active",
+          teamMembers: updatedTeam,
         });
         get().addActivityLog("Logged in", `Session started for ${email}`);
       },
