@@ -279,7 +279,10 @@ function extractJson(content: string, task?: string) {
 }
 
 function getModelForTask(task: string): string {
-  if (["website", "website_edit", "presentation"].includes(task)) {
+  if (task === "website_edit") {
+    return "anthropic";
+  }
+  if (["website", "presentation"].includes(task)) {
     return "openai";
   }
   if (task.startsWith("resume_")) {
@@ -397,7 +400,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as GenerateBody;
   const task = body.task || "";
   
-  if (["website", "website_edit"].includes(task)) {
+  if (task === "website") {
     try {
       const result = await handleStitchWebsiteTask(task, body.input || {});
       return NextResponse.json(result);

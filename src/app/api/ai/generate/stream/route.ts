@@ -29,7 +29,8 @@ function getMaxTokensForTask(task: string): number {
 }
 
 function getModelForTask(task: string): string {
-  if (["website", "website_edit", "presentation"].includes(task)) return "openai";
+  if (task === "website_edit") return "anthropic";
+  if (["website", "presentation"].includes(task)) return "openai";
   return "gemini";
 }
 
@@ -260,7 +261,7 @@ export async function POST(request: Request) {
       };
 
       try {
-        if (["website", "website_edit"].includes(task)) {
+        if (task === "website") {
           try {
             send("progress", { step: "Initializing Google Stitch engine..." });
             const apiKey = process.env.STITCH_API_KEY;
@@ -362,7 +363,8 @@ export async function POST(request: Request) {
         const promptContent = `${instruction}\n\nInput:\n${JSON.stringify(body.input || {}).slice(0, 24000)}`;
 
         // Phase 2: Generation
-        send("progress", { step: `Generating with ${requestedModel === "openai" ? "GPT-4o" : requestedModel}...` });
+        const modelDisplayName = requestedModel === "openai" ? "GPT-4o" : requestedModel === "anthropic" ? "Claude" : requestedModel;
+        send("progress", { step: `Generating with ${modelDisplayName}...` });
         send("progress", { step: "Building component architecture..." });
 
         const { content, provider, model } = await generateAIText([

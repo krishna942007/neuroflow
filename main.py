@@ -53,6 +53,7 @@ def preferred_provider(model: str = None) -> str:
     if m.startswith("groq") or "llama" in m or "mixtral" in m: return "groq"
     if m.startswith("openai") or m.startswith("gpt-") or m.startswith("o1-") or m.startswith("o3-"): return "openai"
     if m.startswith("openrouter") or "/" in m: return "openrouter"
+    if m.startswith("anthropic") or m.startswith("claude"): return "anthropic"
     return None
 
 def provider_config(provider: str, requested_model: str = None):
@@ -101,11 +102,24 @@ def provider_config(provider: str, requested_model: str = None):
             "api_key": key,
             "model": model
         }
+    elif provider == "anthropic":
+        key = clean_env_var("ANTHROPIC_API_KEY")
+        if not key: return None
+        model = clean_env_var("ANTHROPIC_MODEL") or "claude-3-5-sonnet-20241022"
+        if requested_model and requested_model != "anthropic" and (requested_model.startswith("anthropic") or requested_model.startswith("claude")):
+            model = requested_model
+        return {
+            "provider": provider,
+            "api_key": key,
+            "model": model
+        }
     return None
 
 def get_model_for_task(task: str) -> str:
     # Assign the best model (provider fallback key) for each task type
-    if task in ["website", "website_edit", "presentation"]:
+    if task == "website_edit":
+        return "anthropic"
+    elif task in ["website", "presentation"]:
         return "openai" # Best coding and markup schema validation
     elif task in ["resume_ats", "resume_match", "resume_rewrite", "resume_cover", "resume_linkedin", "resume_interview"]:
         return "openai" # Best for business tone, parsing, and copywriting
@@ -134,7 +148,7 @@ def get_timeout_for_task(task: str) -> int:
 
 def get_available_providers(requested_model: str = None):
     preferred = preferred_provider(requested_model)
-    ordered = ["groq", "gemini", "openrouter", "openai"]
+    ordered = ["anthropic", "groq", "gemini", "openrouter", "openai"]
     if preferred and preferred in ordered:
         ordered.remove(preferred)
         ordered.insert(0, preferred)
@@ -148,7 +162,7 @@ def get_available_providers(requested_model: str = None):
 
 def get_configured_providers_list():
     res = []
-    for p in ["groq", "gemini", "openrouter", "openai"]:
+    for p in ["anthropic", "groq", "gemini", "openrouter", "openai"]:
         if provider_config(p):
             res.append(p)
     return res
@@ -227,6 +241,35 @@ def _call_provider(cfg, messages, max_tokens, timeout):
         content = "".join([p.get("text", "") for p in parts])
         if not content:
             raise Exception("Gemini returned an empty response")
+        return {"content": content, "provider": prov, "model": model}
+    elif prov == "anthropic":
+        system_msg = next((m["content"] for m in messages if m["role"] == "system"), "")
+        anthropic_messages = [
+            {"role": "user" if m["role"] == "user" else "assistant", "content": m["content"]}
+            for m in messages if m["role"] != "system"
+        ]
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": key,
+            "anthropic-version": "2023-06-01"
+        }
+        payload = {
+            "model": model,
+            "messages": anthropic_messages,
+            "max_tokens": max_tokens,
+            "temperature": 0.65
+        }
+        if system_msg:
+            payload["system"] = system_msg
+            
+        resp = requests.post(url, json=payload, headers=headers, timeout=timeout)
+        if not resp.ok:
+            raise Exception(f"Anthropic request failed with status {resp.status_code}: {resp.text[:200]}")
+        data = resp.json()
+        content = data.get("content", [{}])[0].get("text", "")
+        if not content:
+            raise Exception("Anthropic returned an empty response")
         return {"content": content, "provider": prov, "model": model}
     else:
         if prov == "groq":

@@ -3,7 +3,7 @@ export type AIMessage = {
   content: string;
 };
 
-type Provider = "gemini" | "groq" | "openrouter" | "openai";
+type Provider = "gemini" | "groq" | "openrouter" | "openai" | "anthropic";
 
 type ProviderConfig = {
   provider: Provider;
@@ -27,6 +27,7 @@ function preferredProvider(model?: string): Provider | null {
   if (m.startsWith("groq") || m.includes("llama") || m.includes("mixtral")) return "groq";
   if (m.startsWith("openai") || m.startsWith("gpt-") || m.startsWith("o1-") || m.startsWith("o3-")) return "openai";
   if (m.startsWith("openrouter") || m.includes("/")) return "openrouter";
+  if (m.startsWith("anthropic") || m.startsWith("claude")) return "anthropic";
   return null;
 }
 
@@ -73,14 +74,24 @@ function providerConfig(provider: Provider, requestedModel?: string): ProviderCo
     return { provider, apiKey, model };
   }
 
+  if (provider === "anthropic") {
+    const apiKey = configured("ANTHROPIC_API_KEY");
+    if (!apiKey) return null;
+    let model = configured("ANTHROPIC_MODEL") || "claude-3-5-sonnet-20241022";
+    if (requestedModel && requestedModel !== "anthropic" && (requestedModel.startsWith("anthropic") || requestedModel.startsWith("claude"))) {
+      model = requestedModel;
+    }
+    return { provider, apiKey, model };
+  }
+
   return null;
 }
 
 function availableProviders(requestedModel?: string) {
   const preferred = preferredProvider(requestedModel);
   const ordered: Provider[] = preferred
-    ? [preferred, "groq", "gemini", "openrouter", "openai"]
-    : ["groq", "gemini", "openrouter", "openai"];
+    ? [preferred, "anthropic", "groq", "gemini", "openrouter", "openai"]
+    : ["anthropic", "groq", "gemini", "openrouter", "openai"];
 
   return [...new Set(ordered)]
     .map((provider) => providerConfig(provider, requestedModel))
@@ -88,7 +99,7 @@ function availableProviders(requestedModel?: string) {
 }
 
 export function getConfiguredProviders() {
-  return (["groq", "gemini", "openrouter", "openai"] as Provider[])
+  return (["anthropic", "groq", "gemini", "openrouter", "openai"] as Provider[])
     .filter((provider) => Boolean(providerConfig(provider)));
 }
 
@@ -129,6 +140,46 @@ async function callGemini(config: ProviderConfig, messages: AIMessage[], maxToke
   return content as string;
 }
 
+async function callAnthropic(config: ProviderConfig, messages: AIMessage[], maxTokens = 4096) {
+  const systemMsg = messages.find(m => m.role === "system")?.content || "";
+  const anthropicMessages = messages
+    .filter(m => m.role !== "system")
+    .map(m => ({
+      role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+      content: m.content
+    }));
+
+  const timeoutMs = maxTokens > 8192 ? 90000 : 45000;
+  const response = await providerFetch(
+    "https://api.anthropic.com/v1/messages",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": config.apiKey,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: anthropicMessages,
+        system: systemMsg,
+        max_tokens: maxTokens,
+        temperature: 0.65
+      }),
+    },
+    timeoutMs,
+  );
+
+  if (!response.ok) {
+    throw new Error(`Anthropic request failed with ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data?.content?.[0]?.text;
+  if (!content) throw new Error("Anthropic returned an empty response");
+  return content as string;
+}
+
 async function callOpenAICompatible(config: ProviderConfig, messages: AIMessage[], maxTokens = 4096) {
   const endpoint = config.provider === "groq" ? GROQ_URL : config.provider === "openrouter" ? OPENROUTER_URL : OPENAI_URL;
   const headers: Record<string, string> = {
@@ -141,7 +192,6 @@ async function callOpenAICompatible(config: ProviderConfig, messages: AIMessage[
     headers["X-Title"] = "NeuroFlow AI";
   }
 
-  // Check if the system message requests JSON output
   const systemMsg = messages.find(m => m.role === "system")?.content || "";
   const wantsJson = systemMsg.toLowerCase().includes("json");
 
@@ -152,7 +202,6 @@ async function callOpenAICompatible(config: ProviderConfig, messages: AIMessage[
     max_tokens: maxTokens,
   };
 
-  // Enforce structured JSON output for OpenAI models
   if (config.provider === "openai" && wantsJson) {
     payload.response_format = { type: "json_object" };
   }
@@ -191,11 +240,12 @@ async function callProviderWithRetry(
     try {
       return provider.provider === "gemini"
         ? await callGemini(provider, messages, maxTokens)
+        : provider.provider === "anthropic"
+        ? await callAnthropic(provider, messages, maxTokens)
         : await callOpenAICompatible(provider, messages, maxTokens);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
-      // Check if retryable (status code in error message or network error)
       const statusMatch = lastError.message.match(/failed with (\d+)/);
       const status = statusMatch ? parseInt(statusMatch[1]) : 0;
       const isRetryable = RETRYABLE_STATUSES.has(status) ||
@@ -204,7 +254,6 @@ async function callProviderWithRetry(
 
       if (!isRetryable || attempt >= maxRetries) break;
 
-      // Exponential backoff delay before retry
       await new Promise((r) => setTimeout(r, PROVIDER_RETRY_DELAY_MS * (attempt + 1)));
     }
   }
@@ -215,7 +264,7 @@ async function callProviderWithRetry(
 export async function generateAIText(messages: AIMessage[], requestedModel?: string, maxTokens = 4096) {
   const providers = availableProviders(requestedModel);
   if (providers.length === 0) {
-    throw new Error("No AI provider key configured. Add OPENAI_API_KEY, GEMINI_API_KEY, or GROQ_API_KEY to your environment.");
+    throw new Error("No AI provider key configured. Add OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, or GROQ_API_KEY to your environment.");
   }
 
   const failures: string[] = [];
