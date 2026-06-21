@@ -308,10 +308,12 @@ export default function AuthScreen() {
                 console.error('localStorage write failed:', e);
               }
               try {
-                window.opener.postMessage({
-                  type: 'GOOGLE_AUTH_SUCCESS',
-                  payload: { fullName: name, email: email, avatarUrl: avatarUrl }
-                }, '*');
+                if (window.opener && window.opener !== window) {
+                  window.opener.postMessage({
+                    type: 'GOOGLE_AUTH_SUCCESS',
+                    payload: { fullName: name, email: email, avatarUrl: avatarUrl }
+                  }, window.location.origin);
+                }
               } catch (e) {
                 console.error('postMessage failed:', e);
               }
