@@ -48,3 +48,5 @@ next-env.d.ts
 /public/babel.min.js
 /images/
 /video/
+settings.json
+src/settings.json
